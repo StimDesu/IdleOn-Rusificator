@@ -152,19 +152,16 @@ def match(fam, glyphs):
 
 
 # ---- output -------------------------------------------------------------------------
-def render_font(fid, pak, fams, out_dir):
-    chars, img, info = load_font(*font_paths(pak, fid))
-    glyphs = {L: glyph_pixels(img, chars[ord(L)]) for L in LATIN if ord(L) in chars and chars[ord(L)]['w'] and chars[ord(L)]['h']}
-    if len(glyphs) < 30:
-        return None
+def cyrillic(glyphs, fams):
+    """Latin glyph pixels of one font/letter set -> (status dict, [(char, pixels, advance)])"""
     results = [(match(f, glyphs), f) for f in fams]
     results = [(r, f) for r, f in results if r]
     if not results:
-        return {'id': fid, 'status': 'no family'}
+        return {'status': 'no family'}, []
     (rate, model, off), fam = min(results, key=lambda t: t[0][0])
     if rate > 0.3:
-        return {'id': fid, 'status': 'no family', 'closest': fam.name, 'error': round(rate, 3)}
-    caps_only = all(_same(glyphs.get(l), glyphs.get(l.upper())) for l in 'abcdeghkmnrs')
+        return {'status': 'no family', 'closest': fam.name, 'error': round(rate, 3)}, []
+    caps_only = all(_same(glyphs.get(l), glyphs.get(l.upper())) for l in 'abcdeghkmnrs' if l in glyphs) or         not any(l in glyphs for l in 'abcdeghkmnrs')
     out = []
     for ch in CYR_UP + CYR_LO + EXTRA:
         key = ch
@@ -176,10 +173,21 @@ def render_font(fid, pak, fams, out_dir):
         if not b:
             continue
         b = shift(b, off)
-        px = model.render(b)
-        out.append((ch, px, fam.advance_for(b) + 0))
+        out.append((ch, model.render(b), fam.advance_for(b)))
+    return {'status': 'ok', 'family': fam.name, 'error': round(rate, 4), 'offset': off, 'glyphs': len(out)}, out
+
+
+def render_font(fid, pak, fams, out_dir):
+    chars, img, info = load_font(*font_paths(pak, fid))
+    glyphs = {L: glyph_pixels(img, chars[ord(L)]) for L in LATIN if ord(L) in chars and chars[ord(L)]['w'] and chars[ord(L)]['h']}
+    if len(glyphs) < 30:
+        return None
+    st, out = cyrillic(glyphs, fams)
+    st['id'] = fid
     if not out:
-        return {'id': fid, 'status': 'no glyphs', 'family': fam.name}
+        return st
+    rate = st['error']
+    fam = type('F', (), {'name': st['family']})
     # pack
     pad = 1
     items = []
@@ -211,7 +219,42 @@ def render_font(fid, pak, fams, out_dir):
     Image.fromarray(sheet).save(os.path.join(out_dir, f'font-{fid}.png'))
     with open(os.path.join(out_dir, f'font-{fid}.json'), 'w', encoding='utf-8') as f:
         json.dump({'family': fam.name, 'fit_error': round(rate, 4), 'chars': spec}, f, ensure_ascii=False, indent=0)
-    return {'id': fid, 'status': 'ok', 'family': fam.name, 'error': round(rate, 4), 'offset': off, 'glyphs': len(spec)}
+    return st
+
+
+# ---- letter images (dialogue boxes, item popups, anvil): one PNG per character -------
+def letter_name(ch):
+    return ('1' + ch) if 'a' <= ch <= 'z' else ch
+
+
+def render_letters(pak, style, fams, out_dir):
+    """assets/data/<letter>_<style>.png sets -> Cyrillic letter PNGs with the same look"""
+    base = f'{pak}/assets/data'
+    glyphs, size = {}, None
+    for L in LATIN:
+        p = f'{base}/{letter_name(L)}_{style}.png'
+        if not os.path.exists(p):
+            continue
+        a = np.array(Image.open(p).convert('RGBA'))
+        size = a.shape[:2]
+        glyphs[L] = {(x, y): tuple(int(v) for v in a[y, x]) for y in range(a.shape[0]) for x in range(a.shape[1]) if a[y, x, 3]}
+    if len(glyphs) < 20:
+        return {'style': style, 'status': 'too few letters'}
+    st, out = cyrillic(glyphs, fams)
+    st['style'] = style
+    os.makedirs(out_dir, exist_ok=True)
+    H = size[0]
+    for ch, px, adv in out:
+        w = max(adv, max(x for x, _ in px) + 1)
+        h = max(H, max(y for _, y in px) + 1)
+        g = np.zeros((h, w, 4), np.uint8)
+        for (x, y), col in px.items():
+            if x >= 0 and y >= 0:
+                g[y, x] = col
+        # Windows file names are case-insensitive (А/а would collide): store code points,
+        # the installer turns U+XXXX back into the character for the asset id
+        Image.fromarray(g).save(os.path.join(out_dir, f'U+{ord(ch):04X}_{style}.png'))
+    return st
 
 
 def _same(a, b):
@@ -220,6 +263,11 @@ def _same(a, b):
 
 def main():
     a = sys.argv[1:]
+    if a[0] == '--letters':  # --letters <pak_dir> <out_dir> <styles>
+        fams = load_families(a[1])
+        for style in a[3].split(','):
+            print(json.dumps(render_letters(a[1], style, fams, a[2]), ensure_ascii=False), flush=True)
+        return
     pak, out_dir = a[0], a[1]
     ids = a[2].split(',') if len(a) > 2 and not a[2].startswith('--') else None
     fams = load_families(pak)

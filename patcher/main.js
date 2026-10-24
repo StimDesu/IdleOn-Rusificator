@@ -5,6 +5,8 @@
 //   main.js uninstall [--game <dir>]   restore the original app.asar
 //   main.js dev <orig.asar> <dir>      write patched files into an unpacked app folder (development)
 'use strict';
+// Electron's fs treats *.asar files as folders; we need the raw archive files
+process.noAsar = true;
 const fs = require('fs');
 const path = require('path');
 const { Archive, writeArchive } = require('./lib/asar');
@@ -95,15 +97,19 @@ function build(src, report) {
 
   const pak = new Pak(njs, src.read(GAME_DIR + 'lib/default.pak'));
   fonts.apply(pak, path.join(ROOT, 'fonts'), report);
-  const imgDir = path.join(ROOT, 'images');
+  // pak/ mirrors asset ids inside default.pak; U+XXXX in a file name is that character
+  // (Windows file names are case-insensitive, Cyrillic letter images need both cases)
   let nImg = 0;
-  if (fs.existsSync(imgDir)) {
-    for (const f of fs.readdirSync(imgDir)) {
-      if (!f.endsWith('.png')) continue;
-      pak.set('assets/data/ru/' + f, fs.readFileSync(path.join(imgDir, f)), 'IMAGE');
-      nImg++;
+  const pakDir = path.join(ROOT, 'pak');
+  (function walk(dir, rel) {
+    if (!fs.existsSync(dir)) return;
+    for (const f of fs.readdirSync(dir)) {
+      const full = path.join(dir, f);
+      const id = (rel ? rel + '/' : '') + f.replace(/U\+([0-9A-F]{4,5})/g, (m, h) => String.fromCodePoint(parseInt(h, 16)));
+      if (fs.statSync(full).isDirectory()) walk(full, id);
+      else if (f.endsWith('.png')) { pak.set(id, fs.readFileSync(full), 'IMAGE'); nImg++; }
     }
-  }
+  })(pakDir, '');
   report.push('ok   images: ' + nImg);
   const built = pak.build();
   out[GAME_DIR + 'N.js'] = Buffer.from(built.njs, 'utf8');

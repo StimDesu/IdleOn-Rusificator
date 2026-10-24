@@ -7,7 +7,6 @@
 А = copy A
 В = copy B
 Е = copy E
-Ё = copy Ë
 З = copy 3
 И = mirror N
 К = copy K
@@ -19,6 +18,18 @@
 Т = copy T
 Х = copy X
 Я = mirror R
+
+// the reference font's own Ë is lowercase-sized, so Ё is drawn here
+Ё:
+.#..#.
+......
+######
+##....
+##....
+####..
+##....
+##....
+######
 
 Б:
 ######.

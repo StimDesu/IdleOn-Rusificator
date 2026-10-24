@@ -84,6 +84,10 @@ def main():
             print(t.get("type"), t.get("id"), t.get("url")[:150])
         return
     page = Session(pick("page"))
+    try:  # the game window is usually not focused while we drive it
+        page.call("Emulation.setFocusEmulationEnabled", enabled=True)
+    except Exception:
+        pass
     if cmd == "shot":
         r = page.call("Page.captureScreenshot", format="png")
         open(a[1], "wb").write(base64.b64decode(r["data"]))
@@ -129,6 +133,15 @@ def main():
             elif m == "Log.entryAdded":
                 e = msg["params"]["entry"]
                 print("LOG", e.get("level"), e.get("text", "")[:500], e.get("url", ""))
+    elif cmd == "key":  # key <char> [hold ms]
+        import time
+        k = a[1]
+        code = {"left": ("ArrowLeft", 37), "right": ("ArrowRight", 39), "up": ("ArrowUp", 38),
+                "down": ("ArrowDown", 40), "esc": ("Escape", 27), "enter": ("Enter", 13)}.get(k) or (k, ord(k.upper()))
+        common = dict(key=code[0], code=("Key" + k.upper()) if len(k) == 1 else code[0], windowsVirtualKeyCode=code[1])
+        page.call("Input.dispatchKeyEvent", type="keyDown", **common)
+        time.sleep(float(a[2]) / 1000 if len(a) > 2 else 0.08)
+        page.call("Input.dispatchKeyEvent", type="keyUp", **common)
     elif cmd == "move":
         page.call("Input.dispatchMouseEvent", type="mouseMoved", x=float(a[1]), y=float(a[2]))
     elif cmd == "reload":
