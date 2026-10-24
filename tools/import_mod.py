@@ -64,6 +64,9 @@ def code_literals(njs):
             continue
         if ID_LIKE.match(s) or s.endswith('.png') or s.startswith('http'):
             continue
+        # sources of data lists ("a b c".split(" ")) and records; drawn text uses '_'
+        if s.count(' ') >= 2:
+            continue
         found.setdefault(s, None)
     return list(found)
 

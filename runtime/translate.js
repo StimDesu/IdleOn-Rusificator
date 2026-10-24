@@ -79,11 +79,52 @@
       }
       applied = [];
     }
+    // Item descriptions are pre-split into desc_line1..8, so they are translated as a whole
+    // (DATA.descs["line1|line2|..."] = "Russian text", '|' = forced break) and the Russian text
+    // is re-wrapped to the width of the original lines. Changed originals stay English.
+    var DESCS = DATA.descs || {};
+    function wrapLines(text, width) {
+      var out = [];
+      String(text).split('|').forEach(function (para) {
+        var words = para.split('_'), line = '';
+        for (var i = 0; i < words.length; i++) {
+          var cand = line ? line + '_' + words[i] : words[i];
+          if (line && cand.length > width) { out.push(line); line = words[i]; } else line = cand;
+        }
+        out.push(line);
+      });
+      return out;
+    }
+    function set(c, k, ru) {
+      if (c[k] === ru) return;
+      applied.push([c, k, c[k], ru]);
+      c[k] = ru;
+    }
+    function applyItems() {
+      var defs = RU.attr('ItemDefinitionsGET');
+      if (!defs) return;
+      defs = defs.h || defs;
+      for (var id in defs) {
+        var it = defs[id], h = it && (it.h || it);
+        if (!h || h.desc_line1 == null) continue;
+        var lines = [];
+        for (var i = 1; i <= 8; i++) { var l = h['desc_line' + i]; if (l != null && l !== 'Filler') lines.push(l); }
+        var t = DESCS[lines.join('|')];
+        if (t == null) continue;
+        var width = 0;
+        lines.forEach(function (l) { width = Math.max(width, l.length); });
+        var ru = lines.length > 1 ? wrapLines(t, width) : [t];
+        while (ru.length > 8 && width < 200) { width += 4; ru = wrapLines(t, width); }
+        for (var j = 1; j <= 8; j++) set(h, 'desc_line' + j, ru[j - 1] != null ? ru[j - 1] : 'Filler');
+      }
+    }
+
     function applyData() {
       revertData();
       if (!RU.isRU()) return;
       keys = new Set();
       eachRoot(function (v) { collectKeys(v, 0); });
+      applyItems();
       eachRoot(function (v) { replaceIn(v, 0); });
       RU.stats.data = applied.length;
     }
@@ -122,10 +163,13 @@
     }, 500);
 
     // ---- drawing layer --------------------------------------------------------------
+    // strings still drawn in English while Russian is on (for finding what to translate)
+    var untranslated = RU.untranslated = new Map();
     function tr(s) {
       if (typeof s !== 'string' || s.length < 3) return s;
       var ru = dict.get(s);
       if (ru !== undefined) { RU.stats.draw++; return ru; }
+      if (/[A-Za-z]{3}/.test(s) && untranslated.size < 20000) untranslated.set(s, (untranslated.get(s) || 0) + 1);
       return s;
     }
     RU.tr = tr;

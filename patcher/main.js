@@ -60,14 +60,19 @@ function buildVersion() {
 
 function readJson(p) { return JSON.parse(fs.readFileSync(p, 'utf8')); }
 
-function readDictDir(dir, into) {
+// translation/*.json: {"English string": "Russian"}. item_desc.json is special: item
+// descriptions are split into lines in the game data, so they are keyed by the original
+// lines joined with '|' and re-wrapped by the runtime.
+const DESC_FILE = 'item_desc.json';
+function readDictDir(dir, into, descs) {
   if (!fs.existsSync(dir)) return 0;
   let n = 0;
   for (const f of fs.readdirSync(dir).sort()) {
     if (!f.endsWith('.json')) continue;
     const d = readJson(path.join(dir, f));
+    const target = f === DESC_FILE ? descs : into;
     for (const k of Object.keys(d)) {
-      if (typeof d[k] === 'string' && d[k] !== '') { into[k] = d[k]; n++; }
+      if (typeof d[k] === 'string' && d[k] !== '') { target[k] = d[k]; n++; }
     }
   }
   return n;
@@ -94,13 +99,13 @@ function comparedLiterals(njs) {
 // Everything the runtime needs, bundled into one script (file:// pages cannot fetch JSON).
 // Reviewed translations (translation/*.json) override drafts (translation/draft/*.json).
 function buildRuntimeData(njs, report) {
-  const dict = {};
-  const nDraft = readDictDir(path.join(ROOT, 'translation', 'draft'), dict);
-  const nFinal = readDictDir(path.join(ROOT, 'translation'), dict);
+  const dict = {}, descs = {};
+  const nDraft = readDictDir(path.join(ROOT, 'translation', 'draft'), dict, descs);
+  const nFinal = readDictDir(path.join(ROOT, 'translation'), dict, descs);
   const lits = comparedLiterals(njs);
   const protect = Object.keys(dict).filter(k => lits.has(k));
   report.push('ok   translation: ' + Object.keys(dict).length + ' strings (draft ' + nDraft + ', reviewed ' + nFinal + '), protected ' + protect.length);
-  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, protect: protect }) + ';\n';
+  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, descs: descs, protect: protect }) + ';\n';
 }
 
 // Returns {path: Buffer} of files to write into the archive.
