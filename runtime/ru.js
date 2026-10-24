@@ -78,17 +78,12 @@
       if (c && Object.prototype.hasOwnProperty.call(c, '_customBlock_Language')) { Blocks = c; break; }
     }
     if (Blocks) {
+      // Russian runs the game's English code path (Language() = -1): every translated
+      // string comes from our dictionary, the game's own FR/DE/KO/JA/ZH tables are unused.
       var origLanguage = Blocks._customBlock_Language;
-      // With an argument (added by the installer to CJK-only checks) Russian reports German,
-      // so the European code path is taken instead of Asian fonts/punctuation.
-      Blocks._customBlock_Language = function (cjk) {
-        var l = origLanguage.call(this);
-        return cjk && l === RU_INDEX ? 1 : l;
-      };
-      var origFont = Blocks._customBlock_LANGUAGEfont;
-      Blocks._customBlock_LANGUAGEfont = function () {
-        if (isRU()) return HX['com.stencyl.behavior.Script'].getFont(33);
-        return origFont.apply(this, arguments);
+      Blocks._customBlock_Language = function () {
+        if (isRU()) return -1;
+        return origLanguage.apply(this, arguments);
       };
     } else log('Language block not found');
 

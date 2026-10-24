@@ -34,17 +34,47 @@ function applyTextPatches(njs, report) {
 
 function readJson(p) { return JSON.parse(fs.readFileSync(p, 'utf8')); }
 
-// Everything the runtime needs, bundled into one script (file:// pages cannot fetch JSON).
-function buildRuntimeData() {
-  const dir = path.join(ROOT, 'translation');
-  const data = {};
-  if (fs.existsSync(dir)) {
-    for (const f of fs.readdirSync(dir).sort()) {
-      if (!f.endsWith('.json')) continue;
-      data[f.replace(/\.json$/, '')] = readJson(path.join(dir, f));
+function readDictDir(dir, into) {
+  if (!fs.existsSync(dir)) return 0;
+  let n = 0;
+  for (const f of fs.readdirSync(dir).sort()) {
+    if (!f.endsWith('.json')) continue;
+    const d = readJson(path.join(dir, f));
+    for (const k of Object.keys(d)) {
+      if (typeof d[k] === 'string' && d[k] !== '') { into[k] = d[k]; n++; }
     }
   }
-  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify(data) + ';\n';
+  return n;
+}
+
+// Literals the code compares strings with: such strings are ids, not text, and must keep
+// their English value inside the game data (they are still translated on screen).
+function comparedLiterals(njs) {
+  const out = new Set();
+  const res = [
+    /"((?:[^"\\]|\\.)+)"(?:==|!=)/g,
+    /(?:==|!=)"((?:[^"\\]|\\.)+)"/g,
+    /\.indexOf\("((?:[^"\\]|\\.)+)"\)/g,
+    /case"((?:[^"\\]|\\.)+)":/g,
+    /\.h\["((?:[^"\\]|\\.)+)"\]/g,
+  ];
+  for (const re of res) {
+    let m;
+    while ((m = re.exec(njs))) out.add(m[1]);
+  }
+  return out;
+}
+
+// Everything the runtime needs, bundled into one script (file:// pages cannot fetch JSON).
+// Reviewed translations (translation/*.json) override drafts (translation/draft/*.json).
+function buildRuntimeData(njs, report) {
+  const dict = {};
+  const nDraft = readDictDir(path.join(ROOT, 'translation', 'draft'), dict);
+  const nFinal = readDictDir(path.join(ROOT, 'translation'), dict);
+  const lits = comparedLiterals(njs);
+  const protect = Object.keys(dict).filter(k => lits.has(k));
+  report.push('ok   translation: ' + Object.keys(dict).length + ' strings (draft ' + nDraft + ', reviewed ' + nFinal + '), protected ' + protect.length);
+  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, protect: protect }) + ';\n';
 }
 
 // Returns {path: Buffer} of files to write into the archive.
@@ -79,7 +109,7 @@ function build(src, report) {
   out[GAME_DIR + 'N.js'] = Buffer.from(built.njs, 'utf8');
   out[GAME_DIR + 'lib/default.pak'] = built.pak;
 
-  out[GAME_DIR + 'ru/data.js'] = Buffer.from(buildRuntimeData(), 'utf8');
+  out[GAME_DIR + 'ru/data.js'] = Buffer.from(buildRuntimeData(njs, report), 'utf8');
   for (const f of fs.readdirSync(path.join(ROOT, 'runtime'))) {
     if (f.endsWith('.js')) out[GAME_DIR + 'ru/' + f] = fs.readFileSync(path.join(ROOT, 'runtime', f));
   }

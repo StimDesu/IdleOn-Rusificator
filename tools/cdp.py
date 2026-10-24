@@ -91,11 +91,44 @@ def main():
         expr = open(a[2], encoding="utf-8").read() if a[1] == "-f" else a[1]
         r = page.call("Runtime.evaluate", expression=expr, returnByValue=True, awaitPromise=True,
                       contextId=game_context(page))
-        print(json.dumps(r.get("result", {}).get("value", r), ensure_ascii=False, indent=1)[:20000])
+        val = r.get("result", {}).get("value", r)
+        if "--out" in a:  # full value to a file
+            with open(a[a.index("--out") + 1], "w", encoding="utf-8") as f:
+                f.write(val if isinstance(val, str) else json.dumps(val, ensure_ascii=False))
+        else:
+            print(json.dumps(val, ensure_ascii=False, indent=1)[:20000])
     elif cmd == "click":
+        import time
         x, y = float(a[1]), float(a[2])
+        page.call("Input.dispatchMouseEvent", type="mouseMoved", x=x, y=y)
+        time.sleep(0.05)
         for t in ("mousePressed", "mouseReleased"):
             page.call("Input.dispatchMouseEvent", type=t, x=x, y=y, button="left", clickCount=1)
+            time.sleep(0.08)
+    elif cmd == "watch":  # watch <seconds> [js]: run js in the game frame, print console output
+        import time
+        page.call("Log.enable")
+        ctx = game_context(page)
+        if len(a) > 2:
+            page.n += 1
+            page.ws.send(json.dumps({"id": page.n, "method": "Runtime.evaluate",
+                                     "params": {"expression": a[2], "contextId": ctx}}))
+        end = time.time() + float(a[1])
+        page.ws.settimeout(1)
+        while time.time() < end:
+            try:
+                msg = json.loads(page.ws.recv())
+            except Exception:
+                continue
+            m = msg.get("method")
+            if m == "Runtime.consoleAPICalled":
+                p = msg["params"]
+                print(p["type"], " ".join(str(x.get("value", x.get("description", ""))) for x in p["args"])[:500])
+            elif m == "Runtime.exceptionThrown":
+                print("EXC", json.dumps(msg["params"]["exceptionDetails"])[:1500])
+            elif m == "Log.entryAdded":
+                e = msg["params"]["entry"]
+                print("LOG", e.get("level"), e.get("text", "")[:500], e.get("url", ""))
     elif cmd == "move":
         page.call("Input.dispatchMouseEvent", type="mouseMoved", x=float(a[1]), y=float(a[2]))
     elif cmd == "reload":
