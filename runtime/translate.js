@@ -169,6 +169,11 @@
       if (typeof s !== 'string' || s.length < 3) return s;
       var ru = dict.get(s);
       if (ru !== undefined) { RU.stats.draw++; return ru; }
+      // the game often draws data strings with '_' already turned into spaces
+      if (s.indexOf(' ') >= 0) {
+        ru = dict.get(s.replace(/ /g, '_'));
+        if (ru !== undefined) { RU.stats.draw++; return ru.replace(/_/g, ' '); }
+      }
       if (/[A-Za-z]{3}/.test(s) && untranslated.size < 20000) untranslated.set(s, (untranslated.get(s) || 0) + 1);
       return s;
     }
