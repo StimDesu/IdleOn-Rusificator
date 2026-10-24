@@ -39,4 +39,12 @@ module.exports = [
     find: /(IsXYmouseWithinBounds\(382,)690(,480,530\))/,
     replace: (m, a, b) => a + '734' + b,
   },
+  {
+    // dialogue colours the "QUEST:"/"REWARD:" keyword by its position; in Russian the
+    // keyword is translated, so look for whatever runtime/ru.js says it is
+    name: 'dialogue keyword colouring',
+    find: /\.indexOf\("(QUEST|REWARD):"\)(\+[56])?/g,
+    replace: (m, k, plus) => '.indexOf(globalThis.__ruKW?__ruKW("' + k + ':"):"' + k + ':")' +
+      (plus ? '+(globalThis.__ruKW?__ruKW("' + k + ':").length-1:' + plus.slice(1) + ')' : ''),
+  },
 ];

@@ -71,6 +71,9 @@
     function options() { var o = attr('OptionsListAccount'); return Array.isArray(o) && o.length > 153 ? o : null; }
     function isRU() { var o = options(); return !!o && Number(o[153]) === RU_VALUE; }
     RU.isRU = isRU;
+    // keywords the game finds inside dialogue text to colour them (see patcher/patches.js)
+    var KW = { 'QUEST:': 'КВЕСТ:', 'REWARD:': 'НАГРАДА:' };
+    globalThis.__ruKW = function (k) { return isRU() && KW[k] || k; };
 
     var Blocks = null;
     for (var k in HX) {
