@@ -4,3 +4,4 @@ __pycache__/
 /work/
 *.asar
 fonts/report.json
+patcher/last-run.log

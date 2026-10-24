@@ -13,13 +13,20 @@ const { Archive, writeArchive } = require('./lib/asar');
 const { Pak } = require('./lib/pak');
 const patches = require('./patches');
 const fonts = require('./lib/fonts');
+const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const GAME_DIR = 'distBuild/static/game/';
-const MARKER = '<!--IDLEON_RU-->';
+const MARKER = '<!--IDLEON_RU';
 const BACKUP = 'app.asar.ru-backup';
 
-function log(s) { process.stdout.write(s + '\n'); }
+// The game exe is a GUI program: its stdout may not reach the console, so run.ps1 shows this file.
+const LOG_FILE = path.join(__dirname, 'last-run.log');
+try { fs.writeFileSync(LOG_FILE, ''); } catch (e) {}
+function log(s) {
+  if (!process.env.IDLEON_RU_LOG_ONLY) process.stdout.write(s + '\n');
+  try { fs.appendFileSync(LOG_FILE, s + '\n'); } catch (e) {}
+}
 
 function applyTextPatches(njs, report) {
   for (const p of patches) {
@@ -32,6 +39,23 @@ function applyTextPatches(njs, report) {
     if (!count && p.required) throw new Error('required patch failed: ' + p.name);
   }
   return njs;
+}
+
+// Fingerprint of everything that goes into the build: the launcher re-installs when it changes.
+const BUILD_DIRS = ['patcher', 'runtime', 'translation', 'fonts', 'pak'];
+function buildVersion() {
+  const h = crypto.createHash('sha1');
+  for (const d of BUILD_DIRS) {
+    (function walk(dir, rel) {
+      if (!fs.existsSync(dir)) return;
+      for (const f of fs.readdirSync(dir).sort()) {
+        const full = path.join(dir, f);
+        if (fs.statSync(full).isDirectory()) walk(full, rel + f + '/');
+        else if (!/\.(log|ps1|md)$/.test(f)) { h.update(rel + f); h.update(fs.readFileSync(full)); }
+      }
+    })(path.join(ROOT, d), d + '/');
+  }
+  return h.digest('hex').slice(0, 12);
 }
 
 function readJson(p) { return JSON.parse(fs.readFileSync(p, 'utf8')); }
@@ -89,7 +113,7 @@ function build(src, report) {
   // ru.js first (it sets up the boot hook), then the feature modules
   const runtime = fs.readdirSync(path.join(ROOT, 'runtime')).filter(f => f.endsWith('.js') && f !== 'ru.js').sort();
   const tags = ['data.js', 'ru.js'].concat(runtime).map(f => '<script src="./ru/' + f + '"></script>').join('');
-  html = html.replace(anchor, s => MARKER + tags + '\n    ' + s);
+  html = html.replace(anchor, s => MARKER + ' v=' + buildVersion() + '-->' + tags + '\n    ' + s);
   out[GAME_DIR + 'index.html'] = Buffer.from(html, 'utf8');
 
   let njs = src.read(GAME_DIR + 'N.js').toString('utf8');
@@ -122,13 +146,26 @@ function build(src, report) {
   return out;
 }
 
-function isPatched(asarFile) {
+// null = not patched, otherwise the build version stored in index.html
+function installedVersion(asarFile) {
   try {
-    const a = new Archive(asarFile);
-    return a.read(GAME_DIR + 'index.html').toString('utf8').indexOf(MARKER) >= 0;
+    const html = new Archive(asarFile).read(GAME_DIR + 'index.html').toString('utf8');
+    const i = html.indexOf(MARKER);
+    if (i < 0) return null;
+    const m = /v=([0-9a-f]+)/.exec(html.slice(i, i + 60));
+    return m ? m[1] : '';
   } catch (e) {
-    return false;
+    return null;
   }
+}
+function isPatched(asarFile) { return installedVersion(asarFile) !== null; }
+
+// Install only when needed: after a Steam update (unpatched files) or a new translation build.
+function ensure(gameDir) {
+  const v = installedVersion(path.join(gameDir, 'resources', 'app.asar'));
+  if (v === buildVersion()) { log('Russian translation is up to date.'); return; }
+  log(v === null ? 'Game files are not patched (new install or game update).' : 'New translation build.');
+  install(gameDir);
 }
 
 function findGame(arg) {
@@ -188,9 +225,10 @@ function main() {
   const gameArg = gi >= 0 ? a[gi + 1] : null;
   try {
     if (a[0] === 'install') install(findGame(gameArg));
+    else if (a[0] === 'ensure') ensure(findGame(gameArg));
     else if (a[0] === 'uninstall') uninstall(findGame(gameArg));
     else if (a[0] === 'dev') dev(a[1], a[2]);
-    else log('usage: main.js install|uninstall [--game dir] | dev <orig.asar> <dir>');
+    else log('usage: main.js install|ensure|uninstall [--game dir] | dev <orig.asar> <dir>');
   } catch (e) {
     log('ERROR: ' + (e && e.stack || e));
     process.exitCode = 1;
