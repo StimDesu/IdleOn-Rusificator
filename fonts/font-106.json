@@ -1,0 +1,27 @@
+{
+"family": "flags",
+"chars": [
+{
+"id": 113,
+"x": 0,
+"y": 0,
+"width": 350,
+"height": 44,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 350,
+"replace": true
+},
+{
+"id": 112,
+"x": 0,
+"y": 46,
+"width": 117,
+"height": 52,
+"xoffset": 0,
+"yoffset": 5,
+"xadvance": 117,
+"replace": true
+}
+]
+}

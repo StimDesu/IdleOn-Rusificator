@@ -106,7 +106,7 @@
     }
 
     // ---- keep the language choice in sync with localStorage ----------------------------
-    var lastOptions = null, lastValue = null;
+    var lastOptions = null, lastValue = null, prevLang = 1;
     var listeners = [];
     RU.onChange = function (f) { listeners.push(f); };
     function changed(on) {
@@ -128,6 +128,7 @@
         store(true);                      // player picked the Russian flag
       }
       lastValue = Number(o[153]);
+      if (lastValue !== RU_VALUE && lastValue >= 1) prevLang = lastValue;
       var now = lastValue === RU_VALUE;
       if (now !== before) changed(now);
     }
@@ -136,7 +137,7 @@
     RU.setRU = function (on) {
       var o = options();
       store(on);
-      if (o) o[153] = on ? RU_VALUE : 1;
+      if (o) o[153] = on ? RU_VALUE : prevLang;
       watch();
     };
 

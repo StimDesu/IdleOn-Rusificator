@@ -31,6 +31,14 @@ function apply(pak, dir, report) {
     let xml = fnt.toString('utf8');
     const have = {};
     xml.replace(/<char [^>]*\bid="(\d+)"/g, (s, cid) => { have[cid] = true; return s; });
+    // replace: true swaps a glyph the font already has (e.g. the flag panel glyphs)
+    for (const c of spec.chars) {
+      if (c.replace && have[c.id]) {
+        xml = xml.replace(new RegExp('<char [^>]*\\bid="' + c.id + '"[^>]*/>\\s*'), '');
+        xml = xml.replace(/<chars count="(\d+)"/, (s, k) => '<chars count="' + (Number(k) - 1) + '"');
+        delete have[c.id];
+      }
+    }
     const add = spec.chars.filter(c => !have[c.id]).map(c =>
       '<char id="' + c.id + '" x="' + c.x + '" y="' + (c.y + top) + '" width="' + c.width + '" height="' + c.height +
       '" xoffset="' + c.xoffset + '" yoffset="' + c.yoffset + '" xadvance="' + c.xadvance + '" page="0" chnl="0"/>');
