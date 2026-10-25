@@ -1,5 +1,4 @@
 {
- "Monster": "Монстер",
  "Crystal_Candalight": "Кристальный_огонёк",
  "Crystal_Cuttlefish": "Кристальная_каракатица",
  "Sprout_Spirit": "Дух_ростка",
@@ -91,7 +90,6 @@
  "Magician_Grub": "Личинка-волшебник",
  "Imperial_Ogre": "Императорский_огр",
  "Pipsqueak": "Пискля",
- "CHOPPIN": "РУБКА",
  "Equinox_Willow": "Уиль_Иквинокс",
  "Effervescent_Eucalyptus": "Эффервесцентный_эвкалипт",
  "Ancient_Seaweed": "Древние_морские_водоросли",
@@ -131,6 +129,5 @@
  "Golden_Chest(W7)": "Золотой_сундук(М7)",
  "Bronze_Chest(W8)": "Бронзовый_сундук(М8)",
  "Silver_Chest(W8)": "Серебряный_сундук(М8)",
- "Golden_Chest(W8)": "Золотой_сундук(М8)",
- "Paying_Respect": "Уважение"
+ "Golden_Chest(W8)": "Золотой_сундук(М8)"
 }

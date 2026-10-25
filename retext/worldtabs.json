@@ -1,0 +1,164 @@
+{
+ "_": "world tabs on the map: textured letters, redrawn with the old letters' texture",
+ "Wb1.png": {
+  "text": "МИР 1",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold",
+  "box": [
+   3,
+   3,
+   71,
+   25
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "outline": "#000000",
+  "fills": [
+   "#ffffff"
+  ],
+  "cap": 15,
+  "texture": true,
+  "cols": [
+   2,
+   71
+  ]
+ },
+ "Wb2.png": {
+  "text": "МИР 2",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold",
+  "box": [
+   3,
+   3,
+   71,
+   25
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "outline": "#000000",
+  "fills": [
+   "#ffffff"
+  ],
+  "cap": 15,
+  "texture": true,
+  "cols": [
+   2,
+   71
+  ]
+ },
+ "Wb3.png": {
+  "text": "МИР 3",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold",
+  "box": [
+   3,
+   3,
+   71,
+   25
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "outline": "#000000",
+  "fills": [
+   "#ffffff"
+  ],
+  "cap": 15,
+  "texture": true,
+  "cols": [
+   2,
+   71
+  ]
+ },
+ "Wb4.png": {
+  "text": "МИР 4",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold",
+  "box": [
+   3,
+   3,
+   71,
+   25
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "outline": "#000000",
+  "fills": [
+   "#ffffff"
+  ],
+  "cap": 15,
+  "texture": true,
+  "cols": [
+   2,
+   71
+  ]
+ },
+ "Wb5.png": {
+  "text": "МИР 5",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold",
+  "box": [
+   3,
+   3,
+   71,
+   25
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "outline": "#000000",
+  "fills": [
+   "#ffffff"
+  ],
+  "cap": 15,
+  "texture": true,
+  "cols": [
+   2,
+   71
+  ]
+ },
+ "Wb6.png": {
+  "text": "МИР 6",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold",
+  "box": [
+   3,
+   3,
+   71,
+   25
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "outline": "#000000",
+  "fills": [
+   "#ffffff"
+  ],
+  "cap": 15,
+  "texture": true,
+  "cols": [
+   2,
+   71
+  ]
+ },
+ "Wb7.png": {
+  "text": "МИР 7",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold",
+  "box": [
+   3,
+   3,
+   72,
+   25
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "outline": "#000000",
+  "fills": [
+   "#ffffff"
+  ],
+  "cap": 15,
+  "texture": true,
+  "cols": [
+   2,
+   null
+  ]
+ }
+}

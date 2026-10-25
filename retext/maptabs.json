@@ -1,0 +1,59 @@
+{
+ "_": "sailing map tabs: hand-drawn caption next to an icon, redrawn in a condensed font",
+ "MapTabz0.png": {
+  "text": "КАРТА",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold SemiCondensed",
+  "box": [
+   50,
+   9,
+   94,
+   34
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "fills": [
+   "#ffd8a5",
+   "#ffd8a5",
+   "#e9b585",
+   "#c48660"
+  ],
+  "outline": "#000000",
+  "cap": 12,
+  "tbox": [
+   52,
+   10,
+   92,
+   34
+  ],
+  "light": 185
+ },
+ "MapTabz1.png": {
+  "text": "ЭКИПАЖ",
+  "ttf": "bahnschrift.ttf",
+  "var": "Bold",
+  "box": [
+   40,
+   8,
+   94,
+   35
+  ],
+  "erase": "clone",
+  "ow": 1,
+  "fills": [
+   "#ffd8a5",
+   "#ffd8a5",
+   "#e9b585",
+   "#c48660"
+  ],
+  "outline": "#000000",
+  "cap": 10,
+  "tbox": [
+   44,
+   9,
+   92,
+   35
+  ],
+  "light": 185
+ }
+}

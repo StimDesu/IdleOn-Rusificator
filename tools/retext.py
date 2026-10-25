@@ -457,8 +457,13 @@ def build_ttf(name, sp, src, img, out_dir):
         for y in range(y0, y1):
             for x in range(x0, x1):
                 px[x, y] = (0, 0, 0, 0)
+    elif sp['erase'] == 'clone':
+        if not clone_erase(img, box, sp.get('cols')):
+            inpaint_rows(img, box)
     else:
         erase(img, box, sp['erase'])
+    if sp.get('tbox'):   # where the new caption goes, when it differs from the erased area
+        x0, y0, x1, y1 = sp['tbox']
     maxw = (sp.get('fit') == 'image' and src.width - 2) or (x1 - x0)
     while True:
         rendered = [ttf_text(ln, sp, cap, fills, outline, ow) for ln in lines]
@@ -483,8 +488,27 @@ def build_ttf(name, sp, src, img, out_dir):
     gap = sp.get('gap', 0)
     th = sum(t.height for t in rendered) + gap * (len(rendered) - 1)
     y = int(round((y0 + y1) / 2 - th / 2)) + sp.get('dy', 0)
+    if sp.get('texture'):
+        # the old letters' own texture: what differs from the cleaned background and is not outline
+        bgp, sp_ = img.load(), src.load()
+        tex = {(x, yy) for yy in range(src.height) for x in range(src.width)
+               if sp_[x, yy][3] > 200 and lum(sp_[x, yy]) > 60
+               and sum(abs(sp_[x, yy][i] - bgp[x, yy][i]) for i in range(3)) > 60}
     for t in rendered:
         x = (x0 + x1 - t.width) // 2 + sp.get('dx', 0)
+        if sp.get('texture'):
+            tp = t.load()
+            for ty in range(t.height):
+                for tx in range(t.width):
+                    c = tp[tx, ty]
+                    if not c[3] or c[:3] == tuple(outline[:3]):
+                        continue
+                    X, Y = x + tx, y + ty
+                    for d in range(0, 16):
+                        q = (X - d, Y) if (X - d, Y) in tex else (X + d, Y) if (X + d, Y) in tex else None
+                        if q:
+                            tp[tx, ty] = sp_[q][:3] + (255,)
+                            break
         img.alpha_composite(t, (max(0, x), max(0, y)))
         y += t.height + gap
     img.save(os.path.join(out_dir, name))
@@ -521,14 +545,17 @@ def clean_column(img, x, step, y0, y1, limit, modes=None):
     return None
 
 
-def clone_erase(img, box):
+def clone_erase(img, box, cols=None):
     """repaint the lettering box row by row from clean body columns left and right of it
     (blended across), so the button's own vertical shading comes back exactly"""
     x0, y0, x1, y1 = box
     px = img.load()
     # the columns must be clean in the rows that hold the lettering (borders may differ above/below)
-    xl = clean_column(img, x0 - 1, -1, y0, y1, -1)
-    xr = clean_column(img, x1, 1, y0, y1, img.width)
+    if cols:
+        xl, xr = cols
+    else:
+        xl = clean_column(img, x0 - 1, -1, y0, y1, -1)
+        xr = clean_column(img, x1, 1, y0, y1, img.width)
     if xl is None and xr is None:
         return False
     # one clean side is enough: copy it across the whole box
@@ -536,8 +563,18 @@ def clone_erase(img, box):
     hi = xr if xr is not None else x1
     xl = xr if xl is None else xl
     xr = xl if xr is None else xr
+    def ref(x, y):
+        # a lone sparkle in the reference column would become a stripe: take its neighbours instead
+        c = px[x, y]
+        if 0 < y < img.height - 1:
+            u, d = px[x, y - 1], px[x, y + 1]
+            if not near(c, u, 90) and not near(c, d, 90) and near(u, d, 60):
+                return u
+        return c
     for y in range(y0, y1):
-        a, b = px[xl, y], px[xr, y]
+        a, b = ref(xl, y), ref(xr, y)
+        if cols:   # explicit columns sit inside the caption area: a lone speck there goes too
+            px[xl, y], px[xr, y] = a, b
         for x in range(lo + 1, hi):
             t = (x - lo) / max(1, hi - lo)
             px[x, y] = tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(4)) if a != b else a
@@ -645,7 +682,7 @@ def build_button(name, sp, src, img, out_dir, save=True):
     if sp.get('outline'):
         outl = hexcol(sp['outline'])
     DARK[0] = outl
-    if sp.get('erase') == 'inpaint' or not clone_erase(img, box):
+    if sp.get('erase') == 'inpaint' or not clone_erase(img, box, sp.get('cols')):
         inpaint_rows(img, box)
     fill = hexcol(sp['fill']) if sp.get('fill') and sp['fill'] != 'auto' else None
     if sp.get('fill') == 'auto':
