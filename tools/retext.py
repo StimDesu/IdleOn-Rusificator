@@ -93,6 +93,30 @@ def recolor(img, fill, outline):
     return img
 
 
+def shadow_color(img, box):
+    """the light cyan shade at the bottom of white letters, if the lettering has one"""
+    x0, y0, x1, y1 = box
+    px = img.load()
+    cols = Counter()
+    for y in range(y0, y1 - 1):
+        for x in range(x0, x1):
+            c, up = px[x, y], px[x, y - 1]
+            if c[3] > 200 and not is_white(c[:3]) and lum(c) > 150 and is_white(up[:3]):
+                cols[c] += 1
+    return cols.most_common(1)[0][0] if cols and cols.most_common(1)[0][1] >= 3 else None
+
+
+def add_shadow(t, fill, shade):
+    """bottom row of every letter stroke in the shadow colour"""
+    px = t.load()
+    f = tuple(fill[:3])
+    for y in range(t.height - 1):
+        for x in range(t.width):
+            if px[x, y][3] and px[x, y][:3] == f and px[x, y + 1][:3] != f:
+                px[x, y] = tuple(shade[:3]) + (px[x, y][3],)
+    return t
+
+
 def text_colors(img, box):
     """most common light and dark colours in the box (the original lettering)"""
     x0, y0, x1, y1 = box
@@ -143,10 +167,25 @@ def text_mask(img, box):
     return mask
 
 
-def erase(img, box, mode):
+def erase(img, box, mode, shade=None):
     x0, y0, x1, y1 = box
     px = img.load()
     if mode == 'none':
+        return
+    if mode == 'rows-fill':
+        # buttons are flat along each row: paint the text area with the row's own body colour
+        def texty(c):
+            return c[3] < 200 or is_white(c[:3]) or max(c[:3]) < 45 or (shade is not None and c == shade)
+        for y in range(y0, y1):
+            row = [px[x, y] for x in range(img.width)]
+            body = Counter(c for c in row if not texty(c))
+            if not body:
+                continue
+            m = body.most_common(1)[0][0]
+            xs = [x for x, c in enumerate(row) if not texty(c)]
+            lo, hi = max(min(xs), x0), min(max(xs) + 1, x1)
+            for x in range(lo, hi):
+                px[x, y] = m
         return
     if mode == 'mask':
         mask = text_mask(img, box)
@@ -207,9 +246,11 @@ def build_one(name, sp, out_dir):
     if box == 'auto':
         box = auto_box(src, sp.get('pad', 3))
     light, dark = text_colors(src, box)
+    shade = shadow_color(src, box)
+    wb = auto_box(src, 0)
     fill = hexcol(sp['fill']) if sp.get('fill', 'auto') != 'auto' else light
     outline = hexcol(sp['outline']) if sp.get('outline', 'auto') != 'auto' else dark
-    erase(img, box, sp.get('erase', 'mask'))
+    erase(img, box, sp.get('erase', 'rows-fill'), shade)
     scale = sp.get('scale', 1)
     lines = sp.get('lines') or sp['text'].split('|')
     bw = box[2] - box[0]
@@ -220,6 +261,8 @@ def build_one(name, sp, out_dir):
         rendered = []
         for ln in lines:
             t = recolor(font.render(ln, spacing), fill, outline)
+            if shade and sp.get('shadow', True):
+                t = add_shadow(t, fill, shade)
             if scale != 1:
                 t = t.resize((t.width * scale, t.height * scale), Image.NEAREST)
             rendered.append(t)
@@ -227,8 +270,8 @@ def build_one(name, sp, out_dir):
             break
     gap = sp.get('gap', scale)
     th = sum(t.height for t in rendered) + gap * (len(rendered) - 1)
-    bh = box[3] - box[1]
-    y = box[1] + (bh - th) // 2 + sp.get('dy', 0)
+    cy = (wb[1] + wb[3]) / 2 if sp.get('box', 'auto') == 'auto' else (box[1] + box[3]) / 2
+    y = int(round(cy - th / 2)) + sp.get('dy', 0)
     for t in rendered:
         if t.width > bw + 2:
             print(f'  {name}: "{lines}" is {t.width}px wide, box {bw}px')
