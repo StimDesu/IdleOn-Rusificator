@@ -126,9 +126,10 @@
       R.createElement = wrapped;
     }
 
-    // ---- local save (Script.saveGame -> SharedObject): same rule, and no translated data ----
-    // The local save holds the raw game attributes; an unpatched game reading [153]=8 or our
-    // Russian strings from it would break, so the save is written from the English state.
+    // ---- local save (Script.saveGame -> SharedObject): same rule for the language value ----
+    // An unpatched game reading [153]=8 from the local save would break. The data maps are not
+    // part of the save (the game swaps them for empty ones while saving), so they stay
+    // translated: reverting them here made English flash on screen after every save.
     var Script = null;
     for (var sk in HX) {
       var sc = HX[sk];
@@ -137,16 +138,10 @@
     if (Script && !Script.saveGame.__ru) {
       var origSave = Script.saveGame;
       Script.saveGame = function () {
-        var o = options(), was = o && Number(o[153]) === RU_VALUE, data = was && RU.revertData;
+        var o = options(), was = o && Number(o[153]) === RU_VALUE;
         if (was) o[153] = 1;
-        if (data) RU.revertData();
         try { return origSave.apply(this, arguments); }
-        finally {
-          if (was) o[153] = RU_VALUE;
-          // the game swaps its data maps for empty ones around saveGame and puts them back
-          // right after it returns, so translate again once the real maps are back
-          if (data && RU.applyData) setTimeout(function () { RU.applyData(); }, 0);
-        }
+        finally { if (was) o[153] = RU_VALUE; }
       };
       Script.saveGame.__ru = true;
     } else if (!Script) log('saveGame not found');
