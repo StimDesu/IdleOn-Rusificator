@@ -111,7 +111,11 @@ function buildRuntimeData(njs, report) {
   const lits = comparedLiterals(njs);
   const protect = Object.keys(dict).filter(k => lits.has(k));
   report.push('ok   translation: ' + Object.keys(dict).length + ' strings (draft ' + nDraft + ', reviewed ' + nFinal + '), protected ' + protect.length);
-  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, descs: descs, protect: protect, rev: rev }) + ';\n';
+  // images with a Russian version in pak/assets/data/ru (runtime/images.js swaps them)
+  const ruImgDir = path.join(ROOT, 'pak', 'assets', 'data', 'ru');
+  const images = fs.existsSync(ruImgDir) ? fs.readdirSync(ruImgDir).filter(f => f.endsWith('.png')) : [];
+  report.push('ok   Russian images: ' + images.length);
+  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, descs: descs, protect: protect, rev: rev, images: images }) + ';\n';
 }
 
 // Returns {path: Buffer} of files to write into the archive.

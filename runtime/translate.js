@@ -294,11 +294,19 @@
       }
       return null;
     }
+    // after switching to English, texts the game built while Russian was on (panel labels
+    // kept in arrays until the next scene) are put back into English when drawn
+    var CYR = /[Ѐ-ӿ]/;
+    function back(s) {
+      if (typeof s !== 'string' || !RU.rev || !CYR.test(s)) return s;
+      var en = RU.rev.get(s);
+      return en === undefined ? s : en;
+    }
     var G = HX['com.stencyl.graphics.G'] || findProto('drawString', 'drawLine');
     if (G) {
       var drawString = G.prototype.drawString;
       G.prototype.drawString = function (text, x, y) {
-        if (lastRU) text = tr(text);
+        text = lastRU ? tr(text) : back(text);
         return drawString.call(this, text, x, y);
       };
     } else RU.logf('G.drawString not found');
@@ -306,7 +314,7 @@
     if (Font) {
       var width = Font.prototype.getTextWidth;
       Font.prototype.getTextWidth = function (text) {
-        if (lastRU) text = tr(text);
+        text = lastRU ? tr(text) : back(text);
         return width.call(this, text);
       };
     } else RU.logf('Font not found');
