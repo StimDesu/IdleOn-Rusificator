@@ -101,11 +101,16 @@ function comparedLiterals(njs) {
 function buildRuntimeData(njs, report) {
   const dict = {}, descs = {};
   const nDraft = readDictDir(path.join(ROOT, 'translation', 'draft'), dict, descs);
+  const draft = Object.assign({}, dict);
   const nFinal = readDictDir(path.join(ROOT, 'translation'), dict, descs);
+  // Russian -> English for strings the game copies into the save (quest helper labels):
+  // older drafts and the old mod wrote them there, the runtime turns them back into English
+  const rev = {};
+  for (const k of Object.keys(draft)) if (draft[k] !== dict[k]) rev[draft[k]] = k;
   const lits = comparedLiterals(njs);
   const protect = Object.keys(dict).filter(k => lits.has(k));
   report.push('ok   translation: ' + Object.keys(dict).length + ' strings (draft ' + nDraft + ', reviewed ' + nFinal + '), protected ' + protect.length);
-  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, descs: descs, protect: protect }) + ';\n';
+  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, descs: descs, protect: protect, rev: rev }) + ';\n';
 }
 
 // Returns {path: Buffer} of files to write into the archive.

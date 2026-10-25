@@ -93,8 +93,10 @@ def main():
         open(a[1], "wb").write(base64.b64decode(r["data"]))
     elif cmd == "eval":
         expr = open(a[2], encoding="utf-8").read() if a[1] == "-f" else a[1]
-        r = page.call("Runtime.evaluate", expression=expr, returnByValue=True, awaitPromise=True,
-                      contextId=game_context(page))
+        # run in the game iframe through its own eval: no Runtime.enable, which replays the whole
+        # (often huge) console buffer and can take minutes
+        wrapped = "document.querySelector('iframe').contentWindow.eval(%s)" % json.dumps(expr)
+        r = page.call("Runtime.evaluate", expression=wrapped, returnByValue=True, awaitPromise=True)
         val = r.get("result", {}).get("value", r)
         if "--out" in a:  # full value to a file
             with open(a[a.index("--out") + 1], "w", encoding="utf-8") as f:
