@@ -1,0 +1,38 @@
+# UI images with English text not covered by the mod (from work/sheets review)
+# big buttons / single labels
+AlUse.png AncientNew.png AtomUpg.png Benter.png CardsetButton1.png CardsetButton2.png CaveEnter.png CaveEnterB.png
+CavePopup0.png CavePopup2.png Claim.png ClamW.png ClassIconsNA2.png CogCollect.png CogShelfInfo.png CogTrash.png
+ConEXPbar2.png CookingNew.png CookingNewB.png DivBut0.png DivBut1.png DivBut2.png DungItemPickup0.png DungItemPickup1.png
+DungShopTab1a.png DungShopTab2a.png DungShopTab3a.png DungShopTab4a.png DungShopTab5a.png Dung_LayoutB1.png Dung_LayoutB2.png
+Dung_LayoutB3.png Dung_LayoutB4.png Dung_LayoutB5.png EldritchNew.png FillerMaterial_x1.png FullInventPopup.png
+GalleryButton0.png GalleryButton1.png GamingCrownGet.png GamingHexLV.png GamingHexNEW.png HatRackDeposit.png HatRackInfo.png
+HoleBraveryChoice0.png HoleBraveryChoice1.png HoleBraveryV.png HoleJusticeChoice0.png HoleJusticeChoice1.png
+HoleJusticeChoice2.png HoleJusticeV.png HoleShroomBTN.png HoleUIbgInv.png HoleWisdomV.png IslandSail0.png IslandSail1.png
+IslandSail2.png IslandSail3.png IslandSail4.png IslandSail5.png JellyBut1.png JellyBut2.png JellyBut3.png LabTab0.png LabTab1.png
+LootRoll1.png LootRoll2.png MTXName0.png MTXbuttonsWords0.png MTXbuttonsWords1.png MTXbuttonsWords2.png MTXpurchase.png
+MTXpurchaseB.png MapTabz0.png MapTabz1.png MassJoke2.png MineBGt.png MineBut0.png MineBut1.png MineBut2.png MineBut3.png
+MultiButtonA.png MultiButtonB.png MultiButtonC.png NewCardA.png NewCardD.png NewItemAnimation1.png NewPray.png NewTab.png
+NewV.png NjQmarkL.png NjUsold.png ObolBuy.png OffersD0.png OffersD1.png OmnipotentNew.png OpalGive.png PachiBonusB0.png
+PachiBonusB1.png PachiBonusB2.png PachiBonusTitle.png PachiButton0.png PachiButton1.png PachiButton2.png PachiButton3.png
+PachiDice.png PachiDiceB.png PachiTitle.png PartyInvite.png PartyInvite2.png PetFightStart.png PetFightStartb.png
+Popup11.png Popup12.png Popup13.png Popup14.png Popup15.png Popup16.png Popup17.png Popup18.png Popup19.png Popup20.png
+Popup21.png Popup22.png Popup23.png Popup24.png Popup26.png Popup27.png Popup28.png Popup29.png Popup30.png Popup32.png
+Popup33.png Popup34.png PopupCaa.png PopupCnt.png PopupCntE.png PopupCr2.png PopupCr3.png PopupCr4.png PopupCr5.png
+PopupG.png PopupNewF.png PopupNum11.png PopupNum12.png PopupNum13.png PopupNum14.png PopupNum15.png PopupNum16.png
+PopupNum17.png PopupNum17b.png PopupNum17c.png PopupNum20.png PopupNum21.png PopupNum22.png PopupVillagerLV.png
+RefDeposit.png ResObsFound.png ResearchQuick0.png ResearchQuick1.png ResearchQuick2.png SF1.png SF2.png SovereignNew.png
+SumWin0.png SumWin1.png SushiLVup.png SushiNEW.png SushiNope.png TRpop.png TalB.png TalL.png TalentFlagB.png
+TaskUpgDisp.png TomeClaim.png TowerButton0.png TowerButton1.png TowerButton2.png TowerButton3.png TowerButton4.png
+TowerButton5.png TranscendentNew.png TrapBtn.png TrapMGname.png TrapPlace.png UIObolButtons1.png UIObolButtons2.png
+UIObolDust1.png UIObolDust2.png UIObolGlob.png UIObolTabs1.png UIObolTabs2.png UIObolTabs3.png UIObolTabs4.png
+UIStatuesTabs1.png UIStatuesTabs2.png UIbuttonGame2.png UIbuttonGame3.png UIclipSign0.png UIclipSign1.png
+UIclipSign3.png UIclipSign4.png UIclipSign7.png UIdieButtons4.png UIdiff.png UIgameBEST.png UImapbg3.png UImoneyC.png
+UImoneyS.png UIpostTabs0.png UIpostTabs1.png UIpostTabs5.png UIpostTabs6.png UIreturn.png VerisimilitudeNew.png
+WorshipButton0.png WorshipButton1.png WorshipTop0.png aDescA.png aDescB0.png aDescB1.png aPurchases0.png aPurchases1.png
+aTabButtons0.png aTabButtons1.png aTabButtons2.png aTabButtons3.png aTabExit.png aUpgradeButton.png adescC.png block.png
+dblexp.png miss.png moreMP.png popupCr.png popupNum10.png queb3.png uiCraft1.png uiCraft2.png z_b.png z_m.png z_q.png z_t.png
+# panels with small text (later, harder)
+ArcStat.png AutoSeg0.png AutoSeg1.png AutoSeg2.png AutoSeg3.png AutoSeg4.png Bossbase.png ColBase.png ColEntrybase.png
+DummyDPS.png Dung_LayoutC2.png DungWepUpg.png EventBM.png EventBMb.png FishTKlow.png GrimoireHelp.png Gpopup4.png
+HoleFountainBG.png RefRankOverlay1.png RefTitle1.png ReefBG0.png ReefBG1.png ReefBG2.png ReefBG3.png ReefBG4.png ReefBG5.png
+TwitchTap.png TwitchTap3.png TwitchTap4.png TwitchTapYT.png UImapbg2.png WheelInfo.png

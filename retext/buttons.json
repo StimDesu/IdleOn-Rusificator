@@ -1,0 +1,62 @@
+{
+ "Claim.png": {
+  "text": "ВЗЯТЬ"
+ },
+ "Benter.png": {
+  "text": "ВОЙТИ"
+ },
+ "UIreturn.png": {
+  "text": "НАЗАД"
+ },
+ "aPurchases1.png": {
+  "text": "ПОЛНО"
+ },
+ "aPurchases0.png": {
+  "text": "КУПИТЬ"
+ },
+ "aUpgradeButton.png": {
+  "text": "АПГРЕЙД"
+ },
+ "UImoneyS.png": {
+  "text": "ОК"
+ },
+ "UImapbg3.png": {
+  "text": "ТЕЛЕПОРТ"
+ },
+ "MultiButtonA.png": {
+  "text": "КОНЕЦ"
+ },
+ "MultiButtonB.png": {
+  "text": "ОК"
+ },
+ "MultiButtonC.png": {
+  "text": "СЛЕД.|РАУНД"
+ },
+ "CardsetButton1.png": {
+  "text": "НАДЕТЬ"
+ },
+ "CardsetButton2.png": {
+  "text": "АКТИВ"
+ },
+ "CogCollect.png": {
+  "text": "СОБРАТЬ"
+ },
+ "TrapBtn.png": {
+  "text": "СОБРАТЬ"
+ },
+ "UIObolButtons1.png": {
+  "text": "РЕРОЛЛ"
+ },
+ "UIObolButtons2.png": {
+  "text": "СЛИТЬ"
+ },
+ "queb3.png": {
+  "text": "СНЯТЬ|ХЕЛПЕРА"
+ },
+ "WorshipButton0.png": {
+  "text": "ПРИЗЫВ"
+ },
+ "WorshipButton1.png": {
+  "text": "ПОКЛОН"
+ }
+}
