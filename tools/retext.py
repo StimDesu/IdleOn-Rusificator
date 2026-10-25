@@ -190,13 +190,16 @@ def text_colors(img, box):
 
 
 LIGHT = [None]
-DARK = [None]    # outline colour of the original lettering   # luminance threshold for non-white lettering (set per image)
+DARK = [None]
+SOFT = [False]   # tinted white lettering (coloured frames)    # outline colour of the original lettering   # luminance threshold for non-white lettering (set per image)
 
 
 def is_white(c):
     if LIGHT[0] is not None:
         return lum(c) >= LIGHT[0]
-    return min(c) > 200 and lum(c) > 222
+    if SOFT[0]:
+        return min(c) > 200 and lum(c) > 222
+    return min(c) > 228 and max(c) - min(c) < 24
 
 
 def auto_box(img, pad, band=0):
@@ -328,6 +331,7 @@ FONT_CACHE = {}
 
 def build_one(name, sp, out_dir):
     LIGHT[0] = sp.get('light')
+    SOFT[0] = sp.get('white') == 'soft'
     src = Image.open(os.path.join(GAME, 'data', name)).convert('RGBA')
     img = src.copy()
     box = sp.get('box') or 'auto'
