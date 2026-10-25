@@ -490,6 +490,205 @@ def build_ttf(name, sp, src, img, out_dir):
     img.save(os.path.join(out_dir, name))
 
 
+def row_modes(img, y0, y1):
+    """most common body colour of each row (no white lettering, no outline black)"""
+    px = img.load()
+    out = {}
+    for y in range(y0, y1):
+        c = Counter(px[x, y] for x in range(img.width)
+                    if px[x, y][3] > 200 and not is_white(px[x, y][:3]) and max(px[x, y][:3]) >= 40)
+        out[y] = c.most_common(1)[0][0] if c else None
+    return out
+
+
+def near(a, b, tol=40):
+    return a is not None and b is not None and sum(abs(a[i] - b[i]) for i in range(3)) <= tol
+
+
+def clean_column(img, x, step, y0, y1, limit, modes=None):
+    """nearest column from x (moving by step) that shows only the button body between y0 and y1"""
+    px = img.load()
+    modes = modes or row_modes(img, y0, y1)
+    start = x
+    while 0 <= x < img.width and x != limit and abs(x - start) <= 6:   # never borrow from a neighbour
+        col = [px[x, y] for y in range(y0, y1)]
+        if all(c[3] > 200 and not is_white(c[:3]) and max(c[:3]) >= 40 for c in col):
+            # icons are not body: most of the column must look like its rows
+            good = sum(near(px[x, y], modes[y], 60) for y in range(y0, y1))
+            if good >= 0.7 * (y1 - y0):
+                return x
+        x += step
+    return None
+
+
+def clone_erase(img, box):
+    """repaint the lettering box row by row from clean body columns left and right of it
+    (blended across), so the button's own vertical shading comes back exactly"""
+    x0, y0, x1, y1 = box
+    px = img.load()
+    # the columns must be clean in the rows that hold the lettering (borders may differ above/below)
+    xl = clean_column(img, x0 - 1, -1, y0, y1, -1)
+    xr = clean_column(img, x1, 1, y0, y1, img.width)
+    if xl is None and xr is None:
+        return False
+    # one clean side is enough: copy it across the whole box
+    lo = xl if xl is not None else x0 - 1
+    hi = xr if xr is not None else x1
+    xl = xr if xl is None else xl
+    xr = xl if xr is None else xr
+    for y in range(y0, y1):
+        a, b = px[xl, y], px[xr, y]
+        for x in range(lo + 1, hi):
+            t = (x - lo) / max(1, hi - lo)
+            px[x, y] = tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(4)) if a != b else a
+    return True
+
+
+def inpaint_rows(img, box):
+    """only the lettering pixels (white, its outline and shade) are replaced, each run in a row
+    blended between the body pixels just left and right of it; gradients and icons stay"""
+    x0, y0, x1, y1 = box
+    px = img.load()
+    shade = shadow_color(img, box)
+    mask = text_mask(img, box, shade, DARK[0])
+    # light shading next to the letters belongs to them too
+    for _ in range(2):
+        grow = set()
+        for (x, y) in mask:
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                q = (x + dx, y + dy)
+                if q not in mask and x0 <= q[0] < x1 and y0 <= q[1] < y1 and px[q][3] > 200 and lum(px[q]) > 160:
+                    grow.add(q)
+        mask |= grow
+    for y in range(y0, y1):
+        x = x0
+        while x < x1:
+            if (x, y) not in mask:
+                x += 1
+                continue
+            s_ = x
+            while x < x1 and (x, y) in mask:
+                x += 1
+            l = px[s_ - 1, y] if s_ > 0 else None
+            r = px[x, y] if x < img.width else None
+            l = l or r
+            r = r or l
+            if l is None:
+                continue
+            for k in range(s_, x):
+                t = (k - s_ + 1) / (x - s_ + 1)
+                px[k, y] = tuple(int(round(l[i] + (r[i] - l[i]) * t)) for i in range(4))
+
+
+def tint(t, fill, shade, outline):
+    """font colours -> the original lettering's colours (white body, shade, dark outline)"""
+    px = t.load()
+    for y in range(t.height):
+        for x in range(t.width):
+            c = px[x, y]
+            if not c[3]:
+                continue
+            if is_white_font(c):
+                n = fill
+            elif lum(c) < 60:
+                n = outline
+            else:
+                n = shade
+            if n is not None:
+                px[x, y] = tuple(n[:3]) + (c[3],)
+    return t
+
+
+def is_white_font(c):
+    return min(c[:3]) > 225
+
+
+def emboss(t, outl, dark):
+    """drop the outline, put a dark copy of the letters 1px right and down"""
+    px = t.load()
+    body = [(x, y) for y in range(t.height) for x in range(t.width)
+            if px[x, y][3] and px[x, y][:3] != tuple(outl[:3])]
+    out = Image.new('RGBA', (t.width + 1, t.height + 1), (0, 0, 0, 0))
+    o = out.load()
+    for (x, y) in body:
+        o[x + 1, y + 1] = tuple(dark[:3]) + (255,)
+    for (x, y) in body:
+        o[x, y] = px[x, y]
+    return out
+
+
+def build_button(name, sp, src, img, out_dir, save=True):
+    """button caption: clone the body over the old lettering, set the game's own button font on top"""
+    if sp.get('clip'):
+        cx0, cy0, cx1, cy1 = sp['clip']
+        part = src.crop((cx0, cy0, cx1, cy1))
+        b_ = auto_box(part, 0)
+        wb = [b_[0] + cx0, b_[1] + cy0, b_[2] + cx0, b_[3] + cy0]
+    else:
+        wb = sp.get('wbox') or auto_box(src, 0, sp.get('band', 0))
+    x0, y0, x1, y1 = wb
+    # lettering = white strokes + 1px outline + 1px shade below
+    box = [max(x0 - 2, 0), max(y0 - 2, 0), min(x1 + 2, src.width), min(y1 + 3, src.height)]
+    if sp.get('box'):
+        box = sp['box']
+    # original colours: shade under the white, outline around it
+    px = src.load()
+    shade = Counter(px[x, y + 1] for x in range(x0, x1) for y in range(y0, y1)
+                    if is_white(px[x, y][:3]) and y + 1 < src.height and not is_white(px[x, y + 1][:3])
+                    and lum(px[x, y + 1]) > 110).most_common(1)
+    shade = shade[0][0] if shade else None
+    # outline = what sits right beside the white strokes, left and right
+    outl = Counter(px[x + d, y] for x in range(x0, x1) for y in range(y0, y1) for d in (-1, 1)
+                   if is_white(px[x, y][:3]) and 0 <= x + d < src.width and px[x + d, y][3] > 200
+                   and not is_white(px[x + d, y][:3]) and lum(px[x + d, y]) < 110).most_common(1)
+    outl = outl[0][0] if outl else (0, 0, 0, 255)
+    if sp.get('outline'):
+        outl = hexcol(sp['outline'])
+    DARK[0] = outl
+    if sp.get('erase') == 'inpaint' or not clone_erase(img, box):
+        inpaint_rows(img, box)
+    fill = hexcol(sp['fill']) if sp.get('fill') and sp['fill'] != 'auto' else None
+    if sp.get('fill') == 'auto':
+        fill = text_colors(src, wb)[0]
+    if sp.get('shade'):
+        shade = hexcol(sp['shade'])
+    lines = sp['text'].split('|')
+    maxw = (sp.get('maxw') or (src.width - 4))
+    mixed = any(ch.islower() for ch in sp['text'])
+    tries = ([(f, sp_) for f in sp['fonts'] for sp_ in (0, -1)] if 'fonts' in sp else
+             [(sp['font'], sp.get('spacing', 0))] if 'font' in sp else
+             [(472, 0), (472, -1), (109, 0), (109, -1), (75, 0), (75, -1)] if mixed and sp.get('size') != 'small' else
+             [(109, 0), (109, -1), (75, 0), (75, -1)] if mixed else
+             [(309, 0), (309, -1), (309, -2), (109, 0), (109, -1), (75, -1)])
+    for fid, spacing in tries:
+        font = FONT_CACHE.get(fid) or FONT_CACHE.setdefault(fid, Font(fid))
+        rendered = [font.render(ln, spacing) for ln in lines]
+        if max(t.width for t in rendered) * sp.get('px', 1) <= maxw:
+            break
+    rendered = [tint(t, fill, shade, outl) for t in rendered]
+    if sp.get('px', 1) > 1:
+        k = sp['px']
+        rendered = [t.resize((t.width * k, t.height * k), Image.NEAREST) for t in rendered]
+    if sp.get('style') == 'shadow':
+        # embossed lettering: no outline, a dark copy 1px right and down
+        dark = Counter(px[x, y] for x in range(box[0], box[2]) for y in range(box[1], box[3])
+                       if px[x, y][3] > 200 and lum(px[x, y]) < 45).most_common(1)
+        dark = dark[0][0] if dark else (0, 0, 0, 255)
+        rendered = [emboss(t, outl, dark) for t in rendered]
+    gap = sp.get('gap', 0)
+    th = sum(t.height for t in rendered) + gap * (len(rendered) - 1)
+    # the white of the new caption sits where the old white was (outline 1px above it)
+    cy = (y0 - 1 + y1 + 2) / 2
+    y = int(round(cy - th / 2)) + sp.get('dy', 0)
+    cx = (x0 + x1) / 2 if not sp.get('center_image') else src.width / 2
+    for t in rendered:
+        x = int(round(cx - t.width / 2)) + sp.get('dx', 0)
+        img.alpha_composite(t, (max(0, x), max(0, y)))
+        y += t.height + gap
+    if save:
+        img.save(os.path.join(out_dir, name))
+
+
 BIG_FONTS = [(259, 0), (259, -1), (322, 0), (322, -1), (309, 0), (309, -1), (309, -2)]
 AUTO_FONTS = [(309, 0), (309, -1), (309, -2), (109, 0), (109, -1), (75, -1)]
 FONT_CACHE = {}
@@ -500,6 +699,16 @@ def build_one(name, sp, out_dir):
     SOFT[0] = sp.get('white') == 'soft'
     src = Image.open(os.path.join(GAME, 'data', name)).convert('RGBA')
     img = src.copy()
+    if sp.get('mode') == 'button':
+        if 'parts' not in sp:
+            return build_button(name, sp, src, img, out_dir)
+        base = {k: v for k, v in sp.items() if k != 'parts'}
+        for part in sp['parts']:   # several captions on one picture
+            q = dict(base, **part)
+            LIGHT[0] = q.get('light')
+            SOFT[0] = q.get('white') == 'soft'
+            build_button(name, q, src, img, out_dir, save=False)
+        return img.save(os.path.join(out_dir, name))
     if 'ttf' in sp or 'gfont' in sp:
         return build_ttf(name, sp, src, img, out_dir)
     box = sp.get('box') or 'auto'
@@ -562,6 +771,8 @@ def build_one(name, sp, out_dir):
     y = int(round(cy - th / 2)) + sp.get('dy', 0)
     if sp.get('box', 'auto') == 'auto' and sp.get('erase') == 'mask-fill' and wb[3] >= src.height - 1:
         y = src.height - th + sp.get('dy', 0)   # lettering cut by the bottom edge: keep it there
+    elif sp.get('valign') == 'bottom':
+        y = min(wb[3] + 1, src.height) - th + sp.get('dy', 0)   # same baseline as the original
     for t in rendered:
         if t.width > bw + 2:
             print(f'  {name}: "{lines}" is {t.width}px wide, box {bw}px')
@@ -598,10 +809,11 @@ def main():
         only = set(sys.argv[3:])
         out_dir = os.path.join(ROOT, 'pak', 'assets', 'data', 'ru')
         os.makedirs(out_dir, exist_ok=True)
+        defaults = spec.get('_defaults', {})
         for name, sp in spec.items():
             if name.startswith('_') or (only and name not in only):
                 continue
-            build_one(name, sp, out_dir)
+            build_one(name, dict(defaults, **sp), out_dir)
         names = [k for k in spec if not k.startswith('_') and (not only or k in only)]
         print('built', len(names))
         preview(names, out_dir, os.path.join(ROOT, 'work', 'retext_preview.png'))

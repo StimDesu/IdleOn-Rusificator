@@ -1,0 +1,504 @@
+{
+ "_": "framed buttons and labels: body cloned over the old lettering, game font on top",
+ "_defaults": {
+  "mode": "button"
+ },
+ "DungShopTab1a.png": {
+  "text": "КРЕДИТЫ",
+  "erase": "inpaint",
+  "shade": "#a2eeff",
+  "maxw": 120,
+  "fonts": [
+   259,
+   309
+  ]
+ },
+ "DungShopTab2a.png": {
+  "text": "ФЛУРБО",
+  "erase": "inpaint",
+  "shade": "#a2eeff",
+  "maxw": 120,
+  "fonts": [
+   259,
+   309
+  ]
+ },
+ "DungShopTab3a.png": {
+  "text": "РАНДОМ",
+  "clip": [
+   14,
+   0,
+   110,
+   33
+  ],
+  "erase": "inpaint",
+  "shade": "#a2eeff",
+  "maxw": 96,
+  "fonts": [
+   259,
+   309
+  ]
+ },
+ "DungShopTab4a.png": {
+  "text": "БУСТЫ",
+  "clip": [
+   5,
+   0,
+   124,
+   33
+  ],
+  "erase": "inpaint",
+  "shade": "#a2eeff",
+  "maxw": 119,
+  "fonts": [
+   259,
+   309
+  ]
+ },
+ "DungShopTab5a.png": {
+  "text": "ЭКИПИРОВКА",
+  "clip": [
+   12,
+   0,
+   112,
+   33
+  ],
+  "erase": "inpaint",
+  "shade": "#a2eeff",
+  "maxw": 100,
+  "fonts": [
+   259,
+   309
+  ]
+ },
+ "Dung_LayoutB1.png": {
+  "text": "НАЙТИ ГРУППУ",
+  "clip": [
+   3,
+   0,
+   102,
+   36
+  ],
+  "erase": "inpaint",
+  "shade": "#a2eeff",
+  "maxw": 99,
+  "fonts": [
+   259,
+   309
+  ]
+ },
+ "Dung_LayoutB2.png": {
+  "text": "МАГАЗИН",
+  "clip": [
+   3,
+   0,
+   103,
+   36
+  ],
+  "erase": "inpaint",
+  "shade": "#a2eeff",
+  "maxw": 100,
+  "fonts": [
+   259,
+   309
+  ]
+ },
+ "Dung_LayoutB4.png": {
+  "text": "ПОЗВАТЬ|ДРУГИХ",
+  "clip": [
+   11,
+   0,
+   90,
+   36
+  ],
+  "maxw": 79
+ },
+ "Dung_LayoutB5.png": {
+  "text": "ВОЙТИ|К ДРУГИМ",
+  "clip": [
+   16,
+   0,
+   90,
+   36
+  ],
+  "maxw": 74
+ },
+ "TowerButton0.png": {
+  "text": "Новая",
+  "clip": [
+   0,
+   3,
+   56,
+   18
+  ],
+  "maxw": 50
+ },
+ "TowerButton1.png": {
+  "text": "Удалить",
+  "clip": [
+   0,
+   3,
+   56,
+   18
+  ],
+  "maxw": 50
+ },
+ "TowerButton2.png": {
+  "text": "След.|волна",
+  "clip": [
+   0,
+   3,
+   56,
+   31
+  ],
+  "maxw": 50
+ },
+ "TowerButton3.png": {
+  "text": "Скрыть|урон",
+  "clip": [
+   0,
+   3,
+   56,
+   31
+  ],
+  "maxw": 50
+ },
+ "TowerButton4.png": {
+  "text": "Принять",
+  "clip": [
+   0,
+   5,
+   56,
+   20
+  ],
+  "white": "soft",
+  "maxw": 50
+ },
+ "TowerButton5.png": {
+  "text": "Сдаться",
+  "clip": [
+   0,
+   3,
+   56,
+   18
+  ],
+  "maxw": 50
+ },
+ "MTXpurchase.png": {
+  "text": "КУПИТЬ",
+  "wbox": [
+   31,
+   15,
+   158,
+   38
+  ],
+  "font": 309,
+  "px": 2,
+  "maxw": 150,
+  "fill": "#ffffff",
+  "shade": "#36feff",
+  "outline": "#000000"
+ },
+ "UImoneyC.png": {
+  "parts": [
+   {
+    "text": "ОТМЕНА",
+    "wbox": [
+     7,
+     10,
+     61,
+     19
+    ],
+    "maxw": 58
+   },
+   {
+    "text": "МАКС",
+    "wbox": [
+     77,
+     10,
+     102,
+     19
+    ],
+    "maxw": 31
+   }
+  ],
+  "erase": "inpaint"
+ },
+ "PetFightStart.png": {
+  "text": "НАЧАТЬ БОЙ",
+  "wbox": [
+   45,
+   27,
+   140,
+   42
+  ],
+  "font": 259,
+  "maxw": 112,
+  "shade": "#d3dcdd",
+  "outline": "#141a22",
+  "center": [
+   97,
+   34
+  ]
+ },
+ "PetFightStartb.png": {
+  "text": "БОНУСЫ",
+  "wbox": [
+   58,
+   20,
+   151,
+   34
+  ],
+  "font": 259,
+  "fill": "#fff0ac",
+  "shade": "#ffcf74",
+  "outline": "#382000",
+  "light": 200
+ },
+ "TrapPlace.png": {
+  "text": "ПОСТАВИТЬ",
+  "wbox": [
+   23,
+   6,
+   108,
+   17
+  ],
+  "maxw": 86,
+  "shade": "#c2cad6",
+  "outline": "#000000"
+ },
+ "ObolBuy.png": {
+  "text": "КУПИТЬ МЕСТО",
+  "wbox": [
+   46,
+   10,
+   138,
+   22
+  ],
+  "maxw": 110
+ },
+ "OpalGive.png": {
+  "text": "ДАТЬ|ОПАЛ",
+  "wbox": [
+   27,
+   4,
+   59,
+   24
+  ],
+  "maxw": 36,
+  "fill": "#fbffaa",
+  "shade": "#5cffe4",
+  "outline": "#010001",
+  "light": 230
+ },
+ "UIdieButtons4.png": {
+  "text": "УМЕРЕТЬ",
+  "wbox": [
+   7,
+   4,
+   67,
+   16
+  ],
+  "maxw": 70
+ },
+ "AtomUpg.png": {
+  "text": "АПГРЕЙД",
+  "wbox": [
+   6,
+   10,
+   88,
+   27
+  ],
+  "font": 259,
+  "maxw": 86,
+  "shade": "#ffd3b3",
+  "outline": "#000000"
+ },
+ "HoleUIbgInv.png": {
+  "text": "ВКЛАД",
+  "wbox": [
+   6,
+   6,
+   48,
+   15
+  ],
+  "maxw": 48,
+  "fill": "#faffaa",
+  "shade": "#5cffe4",
+  "outline": "#000000",
+  "light": 230
+ },
+ "TomeClaim.png": {
+  "parts": [
+   {
+    "text": "Заслужено!",
+    "wbox": [
+     15,
+     7,
+     116,
+     17
+    ],
+    "maxw": 110,
+    "style": "shadow",
+    "outline": "#594840",
+    "shade": "#ffd3f1",
+    "size": "small"
+   },
+   {
+    "text": "ВЗЯТЬ",
+    "wbox": [
+     63,
+     36,
+     107,
+     45
+    ],
+    "maxw": 46
+   }
+  ]
+ },
+ "ClamW.png": {
+  "text": "В Clamworks",
+  "wbox": [
+   7,
+   5,
+   103,
+   16
+  ],
+  "maxw": 98,
+  "light": 200,
+  "fill": "#ffebe2",
+  "shade": "#ffd2c8",
+  "outline": "#221d1f"
+ },
+ "CogShelfInfo.png": {
+  "parts": [
+   {
+    "text": "Открыть",
+    "wbox": [
+     11,
+     4,
+     59,
+     17
+    ],
+    "maxw": 52,
+    "light": 220
+   },
+   {
+    "text": "полку",
+    "wbox": [
+     8,
+     18,
+     42,
+     29
+    ],
+    "maxw": 36,
+    "light": 220
+   }
+  ],
+  "size": "small"
+ },
+ "CogTrash.png": {
+  "text": "Удалить",
+  "wbox": [
+   5,
+   4,
+   72,
+   15
+  ],
+  "maxw": 68,
+  "light": 220,
+  "size": "small"
+ },
+ "GalleryButton0.png": {
+  "text": "Бонусы|трофеев",
+  "wbox": [
+   37,
+   3,
+   142,
+   32
+  ],
+  "maxw": 110,
+  "light": 200,
+  "fill": "#f0e3c1",
+  "shade": "#cdb893",
+  "outline": "#000000"
+ },
+ "GalleryButton1.png": {
+  "text": "Бонусы|табличек",
+  "wbox": [
+   43,
+   3,
+   153,
+   33
+  ],
+  "maxw": 112,
+  "light": 200,
+  "fill": "#c3eeff",
+  "shade": "#89b4e0",
+  "outline": "#000000"
+ },
+ "HatRackDeposit.png": {
+  "text": "Подарить|шляпы",
+  "wbox": [
+   20,
+   6,
+   128,
+   38
+  ],
+  "maxw": 108,
+  "light": 190,
+  "fill": "#ffea5e",
+  "shade": "#ecae4e",
+  "outline": "#000000"
+ },
+ "DungItemPickup0.png": {
+  "parts": [
+   {
+    "text": "НАДЕТЬ",
+    "wbox": [
+     52,
+     18,
+     115,
+     33
+    ],
+    "maxw": 130
+   },
+   {
+    "text": "ПРОДАТЬ",
+    "wbox": [
+     205,
+     18,
+     253,
+     33
+    ],
+    "maxw": 130
+   }
+  ],
+  "font": 259
+ },
+ "DungItemPickup1.png": {
+  "parts": [
+   {
+    "text": "УЛУЧШИТЬ",
+    "wbox": [
+     42,
+     18,
+     127,
+     32
+    ],
+    "maxw": 130
+   },
+   {
+    "text": "ПРОДАТЬ",
+    "wbox": [
+     205,
+     18,
+     253,
+     33
+    ],
+    "maxw": 130
+   }
+  ],
+  "font": 259
+ }
+}

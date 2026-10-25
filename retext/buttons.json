@@ -1,8 +1,9 @@
 {
+ "_defaults": {
+  "mode": "button"
+ },
  "Claim.png": {
-  "text": "ВЗЯТЬ",
-  "font": 309,
-  "spacing": -2
+  "text": "ВЗЯТЬ"
  },
  "Benter.png": {
   "text": "ВОЙТИ"
@@ -11,7 +12,7 @@
   "text": "НАЗАД"
  },
  "aPurchases1.png": {
-  "text": "ПОЛНО"
+  "text": "МЕСТ НЕТ"
  },
  "aPurchases0.png": {
   "text": "КУПИТЬ"
@@ -29,38 +30,28 @@
   "text": "КОНЕЦ"
  },
  "MultiButtonB.png": {
-  "text": "ОК"
+  "text": "ПРИНЯТЬ"
  },
  "MultiButtonC.png": {
   "text": "СЛЕД.|РАУНД"
  },
  "CardsetButton1.png": {
-  "text": "НАДЕТЬ"
+  "text": "ВЗЯТЬ",
+  "white": "soft",
+  "style": "shadow"
  },
  "CardsetButton2.png": {
   "text": "АКТИВ"
  },
  "CogCollect.png": {
   "text": "СОБРАТЬ",
-  "box": [
-   3,
-   3,
-   54,
-   18
-  ],
-  "font": 309,
-  "spacing": -2
+  "light": 150,
+  "fill": "auto"
  },
  "TrapBtn.png": {
   "text": "СОБРАТЬ",
-  "box": [
-   3,
-   4,
-   58,
-   20
-  ],
-  "font": 309,
-  "spacing": -2
+  "light": 150,
+  "fill": "auto"
  },
  "UIObolButtons1.png": {
   "text": "РЕРОЛЛ"
@@ -72,9 +63,13 @@
   "text": "СНЯТЬ|ХЕЛПЕРА"
  },
  "WorshipButton0.png": {
-  "text": "ПРИЗЫВ"
+  "text": "ПРИЗЫВ",
+  "white": "soft",
+  "style": "shadow"
  },
  "WorshipButton1.png": {
-  "text": "ПОКЛОН"
+  "text": "ПОКЛОН",
+  "white": "soft",
+  "style": "shadow"
  }
 }
