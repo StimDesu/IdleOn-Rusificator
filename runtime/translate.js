@@ -243,10 +243,36 @@
       }
       ru = trGainLine(s);
       if (ru !== undefined) { RU.stats.draw++; return ru; }
+      ru = trTruncated(s);
+      if (ru !== undefined) { RU.stats.draw++; return ru; }
       if (/[A-Za-z]{3}/.test(s) && untranslated.size < 20000) untranslated.set(s, (untranslated.get(s) || 0) + 1);
       return s;
     }
     RU.tr = tr;
+    // long texts cut to fit a box ("*Warrior,_Archer_or_Ma..."): find the full English text
+    // by its start and cut the Russian one to the same length; a leading marker (* ^ & #)
+    // is kept as is
+    var sortedKeys = null, truncCache = new Map();
+    function startingWith(prefix) {
+      if (!sortedKeys) sortedKeys = Array.from(dict.keys()).sort();
+      var lo = 0, hi = sortedKeys.length;
+      while (lo < hi) { var mid = (lo + hi) >> 1; if (sortedKeys[mid] < prefix) lo = mid + 1; else hi = mid; }
+      return lo < sortedKeys.length && sortedKeys[lo].indexOf(prefix) === 0 ? dict.get(sortedKeys[lo]) : undefined;
+    }
+    function trTruncated(s) {
+      if (s.length < 9 || s.slice(-3) !== '...') return undefined;
+      var prefix = s.slice(0, -3);
+      if (truncCache.has(prefix)) return truncCache.get(prefix);
+      var mark = '', ru = startingWith(prefix);
+      if (ru === undefined && /^[*^&#]/.test(prefix)) { mark = prefix[0]; ru = startingWith(prefix.slice(1)); }
+      var res;
+      if (ru !== undefined) {
+        var len = prefix.length - mark.length;
+        res = mark + (ru.length <= len ? ru : ru.slice(0, len).replace(/[_,.\s]+$/, '') + '...');
+      }
+      truncCache.set(prefix, res);
+      return res;
+    }
     // AFK gains popup lines ("*89_Kills", "*3,344_Coins", "*1_Bored_Bean_Card") are glued
     // together while the save loads, before the data layer has run, so translate the parts here
     var GAIN_WORDS = { Kills: 'убийств', Coins: 'монет', Main_Exp: 'опыта_класса' };

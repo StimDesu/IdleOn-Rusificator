@@ -1083,7 +1083,7 @@
  "I_speak_not_to_those_who_show_no_respect..._swap_to_a_different_character,_and_return_to_this_one_after_1_hour.": "Я_не_говорю_с_теми,_кто_не_проявляет_уважения..._смени_персонажа_и_вернись_на_этого_через_1_час.",
  "Show_some_respect_if_you_wish_to_stand_before_me..._swap_to_a_different_character,_and_return_to_this_one_after_1_hour.": "Прояви_уважение,_если_хочешь_предстать_передо_мной..._смени_персонажа_и_вернись_на_этого_через_1_час.",
  "When_the_story_ends_in_defeat,_you_don't_keep_ANY_bonuses!_You_have_to_RUN_to_keep_them..._I'll_give_you_another_try!": "Если_история_кончается_поражением,_НИ_ОДИН_бонус_не_сохраняется!_Чтобы_сохранить,_надо_СБЕЖАТЬ..._дам_тебе_ещё_попытку!",
- "MUSHROOMS_LEFT;": "ГРИБОВ_ОСТАЛОСЬ:",
+ "MUSHROOMS_LEFT;": "ГРИБОВ_ОСТАЛОСЬ;",
  "So_uh..._I_guess_I_should've_saved_at_least_SOMETHING_for_retirement_eh?_Maybe_next_time...": "Так,_э-э..._надо_было_отложить_хоть_ЧТО-ТО_на_пенсию,_да?_Может,_в_следующий_раз...",
  "Well_that_was_stressful!_It_wasn't_an_easy_life_I_had,_but_it_was_the_one_I_chose..._so_at_least_I_can_rest_easy_knowing_it_was_MY_life!": "Ну_и_нервотрёпка!_Жизнь_у_меня_была_непростая,_но_я_сам_её_выбрал..._так_что_хотя_бы_спокоен:_это_была_МОЯ_жизнь!",
  "Yes,_quite_the_game_that_was._I'll_need_to_ruminate_over_the_intricacies_of_what_transpired_as_to_maximize_my_potential_next_game...": "Да,_вот_это_была_партия._Надо_поразмыслить_над_тонкостями_произошедшего,_чтобы_в_следующей_игре_раскрыть_весь_потенциал...",
@@ -1588,5 +1588,16 @@
  "That_kinda_sucked..._|_eugh,_I'm_gonna_need_a_heal_just_to_recover_from_that_cringe!": "Так_себе_вышло..._|_фу,_мне_нужен_хил,_чтобы_оправиться_от_такого_кринжа!",
  "Look_bud,_you_know_what?_I'm_just_gonna_let_you_hit_me_a_bit,_since_you've_already_fake_killed_me_so_many_times._Go_ahead!_Hit_me!": "Слушай,_приятель,_знаешь_что?_Дам-ка_я_тебе_меня_немного_побить,_раз_ты_уже_столько_раз_понарошку_меня_убивал._Давай!_Бей!",
  "You're_too_adorable_to_attack,_I_would_never_hurt_a_lil'_thing_like_u_#": "Ты_слишком_милый,_чтобы_тебя_бить,_я_бы_ни_за_что_не_обидел_такую_кроху_#",
- "You_need_to_defeat_the_World_5_boss_Kattlekruk_in_normal_mode_and_complete_the_Bird's_Quest_to_unlock_World_6,_it_was_part_of_the_rules.": "Чтобы_открыть_мир_6,_нужно_победить_босса_мира_5_Каттлкрука_в_обычном_режиме_и_выполнить_квест_птицы,_таковы_правила."
+ "You_need_to_defeat_the_World_5_boss_Kattlekruk_in_normal_mode_and_complete_the_Bird's_Quest_to_unlock_World_6,_it_was_part_of_the_rules.": "Чтобы_открыть_мир_6,_нужно_победить_босса_мира_5_Каттлкрука_в_обычном_режиме_и_выполнить_квест_птицы,_таковы_правила.",
+ "NEXT@LV": "СЛЕД.@УР.",
+ "POINTS": "ОЧКОВ",
+ "LEFT;@": "ОСТ.;@",
+ "SUPER_PTS": "СУПЕР_ОЧ.",
+ "Crystal_Mob_Chance:": "Шанс_кристалла:",
+ "QUANTITY;": "КОЛ-ВО;",
+ "STOCK;@": "ЗАПАС;@",
+ "hr": "ч",
+ "hr_": "ч_",
+ "min_": "мин_",
+ "sec": "сек"
 }
