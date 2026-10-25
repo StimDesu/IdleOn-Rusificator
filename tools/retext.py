@@ -135,13 +135,14 @@ def shadow_color(img, box):
     return cols.most_common(1)[0][0] if cols and cols.most_common(1)[0][1] >= 3 else None
 
 
-def row_fills(img, box):
+def row_fills(img, box, skip_white=False):
     """for each row of the box: its most common bright colour (the letter fill)"""
     x0, y0, x1, y1 = box
     px = img.load()
     out = []
     for y in range(y0, y1):
-        cols = Counter(px[x, y] for x in range(x0, x1) if px[x, y][3] > 200 and lum(px[x, y]) > 90)
+        cols = Counter(px[x, y] for x in range(x0, x1) if px[x, y][3] > 200 and lum(px[x, y]) > 90
+                       and not (skip_white and min(px[x, y][:3]) > 235))
         if cols:
             out.append(cols.most_common(1)[0][0])
     return out
@@ -324,6 +325,171 @@ def preview(names, out_dir, out_png, zoom=3):
     out.save(out_png)
 
 
+def gfont_mask(text, sp, cap):
+    """letter bodies (no outline) of a game font, scaled up by `px`"""
+    font = FONT_CACHE.get(sp['gfont']) or FONT_CACHE.setdefault(sp['gfont'], Font(sp['gfont']))
+    if '!' in text and not font.render('!').getbbox():   # some pixel fonts have no '!': draw one
+        parts = text.split('!')
+        ms = [gfont_mask(p_, dict(sp, px=1), cap) if p_.strip() else None for p_ in parts]
+        h = max(m_.height for m_ in ms if m_ is not None)
+        bang = Image.new('L', (2, h), 255)
+        bang.paste(0, (0, h - 3, 2, h - 2))
+        pieces = []
+        for i, m_ in enumerate(ms):
+            if m_ is not None:
+                pieces.append((m_, 0 if not parts[i].endswith(' ') else 3))
+            if i < len(ms) - 1:
+                pieces.append((bang, 0))
+        W = sum(m_.width + 1 + extra for m_, extra in pieces)
+        m = Image.new('L', (W, h), 0)
+        x = 0
+        for m_, extra in pieces:
+            m.paste(m_, (x, h - m_.height))
+            x += m_.width + 1 + extra
+        k = sp.get('px', 1)
+        return m.resize((m.width * k, m.height * k), Image.NEAREST) if k != 1 else m
+    t = font.render(text, sp.get('spacing', 0))
+    px = t.load()
+    cols = [px[x, y] for x in range(t.width) for y in range(t.height) if px[x, y][3]]
+    hi = max(lum(c) for c in cols)
+    m = Image.new('L', t.size, 0)
+    mp = m.load()
+    for y in range(t.height):
+        for x in range(t.width):
+            if px[x, y][3] > 128 and lum(px[x, y]) > min(70, hi * 0.6):
+                mp[x, y] = 255
+    m = m.crop(m.getbbox())
+    k = sp.get('px', 1)
+    return m.resize((m.width * k, m.height * k), Image.NEAREST) if k != 1 else m
+
+
+def ttf_mask(text, sp, cap):
+    """letter bodies of a system font (no anti-aliasing) whose capitals are `cap` pixels tall"""
+    from PIL import ImageFont, ImageDraw
+    if 'gfont' in sp:
+        return gfont_mask(text, sp, cap)
+    path = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts', sp['ttf'])
+    k = sp.get('px', 1)   # chunky pixels: draw small, scale up
+    cap = max(4, round(cap / k))
+    size = cap
+    for _ in range(40):
+        f = ImageFont.truetype(path, size)
+        if sp.get('var'):
+            f.set_variation_by_name(sp['var'])
+        bb = f.getbbox('НЕ')
+        if bb[3] - bb[1] >= cap:
+            break
+        size += 1
+    top = f.getbbox('Н')[1]
+    w = int(f.getlength(text)) + 8
+    m = Image.new('L', (w, cap + size), 0)
+    d = ImageDraw.Draw(m)
+    d.fontmode = '1'
+    d.text((4, -top), text, font=f, fill=255, spacing=0)
+    bb = m.getbbox()
+    m = m.crop(bb) if bb else m
+    sq = sp.get('squeeze', 1)
+    if sq != 1:
+        m = m.resize((max(1, round(m.width * sq)), m.height), Image.NEAREST)
+    if k != 1:
+        m = m.resize((m.width * k, m.height * k), Image.NEAREST)
+    return m
+
+
+def ttf_text(text, sp, cap, fills, outline, ow):
+    """system-font lettering painted like the original: row colours + dark outline"""
+    m = ttf_mask(text, sp, cap)
+    W, H = m.width + 2 * ow, m.height + 2 * ow + sp.get('drop', 0)
+    out = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    mp, o = m.load(), out.load()
+    body = {(x + ow, y + ow) for x in range(m.width) for y in range(m.height) if mp[x, y]}
+    ol = tuple(outline[:3]) + (255,)
+    drop = sp.get('drop', 0)
+    for (x, y) in body:
+        for dx in range(-ow, ow + 1):
+            for dy in range(-ow, ow + 1 + drop):
+                if 0 <= x + dx < W and 0 <= y + dy < H:
+                    o[x + dx, y + dy] = ol
+    n = len(fills)
+    for (x, y) in body:
+        t = (y - ow) / max(1, m.height)
+        o[x, y] = tuple(fills[min(n - 1, int(t * n))][:3]) + (255,)
+    return out
+
+
+def add_glow(t, color, r, peak):
+    """soft halo around the lettering, like the original's"""
+    from PIL import ImageFilter
+    a = t.getchannel('A').point(lambda v: 255 if v else 0)
+    pad = Image.new('L', (t.width + 2 * r, t.height + 2 * r), 0)
+    pad.paste(a, (r, r))
+    halo = pad.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(r / 2))
+    halo = halo.point(lambda v: min(peak, v * peak // 128))
+    out = Image.new('RGBA', pad.size, tuple(color[:3]) + (0,))
+    out.putalpha(halo)
+    out.alpha_composite(t, (r, r))
+    return out
+
+
+def build_ttf(name, sp, src, img, out_dir):
+    """the whole caption redrawn: clear the lettering box, draw a system font in its colours"""
+    band = sp.get('band', 0)
+    box = sp.get('box')
+    if not box:
+        box = list(src.crop((0, band, src.width, src.height)).getbbox())
+        box[1] += band; box[3] += band
+    lines = sp['text'].split('|')
+    orig_lines = sp.get('orig_lines', len(lines))
+    allf = row_fills(src, box, sp.get('skip_white')) if not sp.get('fills') else [hexcol(c) for c in sp['fills']]
+    per = max(1, len(allf) // orig_lines)
+    fills = allf[:per] if not sp.get('fills') else allf
+    _, dark = text_colors(src, box)
+    outline = hexcol(sp['outline']) if sp.get('outline') else dark
+    ow = sp.get('ow', 1)
+    cap = sp.get('cap') or max(6, per)
+    glow = None
+    if sp.get('glow'):
+        semi = Counter(c[:3] for c in (src.get_flattened_data() if hasattr(src, 'get_flattened_data') else src.getdata()) if 0 < c[3] < 200)
+        glow = (semi.most_common(1)[0][0] if semi else (255, 255, 255), sp['glow'], sp.get('glow_peak', 110))
+    x0, y0, x1, y1 = box
+    px = img.load()
+    if sp.get('erase', 'clear') == 'clear':
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                px[x, y] = (0, 0, 0, 0)
+    else:
+        erase(img, box, sp['erase'])
+    maxw = (sp.get('fit') == 'image' and src.width - 2) or (x1 - x0)
+    while True:
+        rendered = [ttf_text(ln, sp, cap, fills, outline, ow) for ln in lines]
+        if glow:
+            rendered = [add_glow(t, *glow) for t in rendered]
+        if max(t.width for t in rendered) <= maxw + (2 * glow[1] if glow else 0):
+            break
+        if 'gfont' in sp:   # the pixel font is too wide: tighter, then a condensed system font
+            if sp.get('spacing', 0) > -1:
+                sp['spacing'] = -1
+                continue
+            cap = rendered[0].height - 2 * ow - sp.get('drop', 0)
+            sp = dict(sp, ttf='bahnschrift.ttf', var='Bold Condensed')
+            del sp['gfont']
+            continue
+        if sp.get('squeeze', 1) > 0.72:
+            sp['squeeze'] = round(sp.get('squeeze', 1) - 0.04, 2)
+        elif cap > 6:
+            cap -= 1
+        else:
+            break
+    gap = sp.get('gap', 0)
+    th = sum(t.height for t in rendered) + gap * (len(rendered) - 1)
+    y = int(round((y0 + y1) / 2 - th / 2)) + sp.get('dy', 0)
+    for t in rendered:
+        x = (x0 + x1 - t.width) // 2 + sp.get('dx', 0)
+        img.alpha_composite(t, (max(0, x), max(0, y)))
+        y += t.height + gap
+    img.save(os.path.join(out_dir, name))
+
+
 BIG_FONTS = [(259, 0), (259, -1), (322, 0), (322, -1), (309, 0), (309, -1), (309, -2)]
 AUTO_FONTS = [(309, 0), (309, -1), (309, -2), (109, 0), (109, -1), (75, -1)]
 FONT_CACHE = {}
@@ -334,6 +500,8 @@ def build_one(name, sp, out_dir):
     SOFT[0] = sp.get('white') == 'soft'
     src = Image.open(os.path.join(GAME, 'data', name)).convert('RGBA')
     img = src.copy()
+    if 'ttf' in sp or 'gfont' in sp:
+        return build_ttf(name, sp, src, img, out_dir)
     box = sp.get('box') or 'auto'
     if box == 'auto' and sp.get('erase') == 'clear':
         box = list(src.crop((0, sp.get('band', 0), src.width, src.height)).getbbox())
