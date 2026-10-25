@@ -1,0 +1,111 @@
+{
+ "_": "tabs: icon on top, white label at the bottom",
+ "UIObolTabs1.png": {
+  "text": "ЛИЧНЫЕ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIObolTabs2.png": {
+  "text": "СЕМЬЯ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIObolTabs3.png": {
+  "text": "АПГРЕЙД",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIObolTabs4.png": {
+  "text": "ИТОГО",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIObolGlob.png": {
+  "text": "ВСЕ ЛИЧНЫЕ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIpostTabs0.png": {
+  "text": "ЗАКАЗЫ",
+  "band": 27,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIpostTabs1.png": {
+  "text": "ЗАКАЗЫ",
+  "band": 27,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIpostTabs5.png": {
+  "text": "АПГРЕЙД",
+  "band": 27,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIpostTabs6.png": {
+  "text": "АПГРЕЙД",
+  "band": 27,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "aTabButtons0.png": {
+  "text": "ВАРКА",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "aTabButtons1.png": {
+  "text": "ЖИДКОСТИ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "aTabButtons2.png": {
+  "text": "ФЛАКОНЫ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "aTabButtons3.png": {
+  "text": "ДОНАТ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "aTabExit.png": {
+  "text": "ВЫХОД",
+  "band": 27,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIStatuesTabs1.png": {
+  "text": "ВЛОЖИТЬ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "UIStatuesTabs2.png": {
+  "text": "АПГРЕЙД",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "LabTab0.png": {
+  "text": "МЕЙНФРЕЙМ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ },
+ "LabTab1.png": {
+  "text": "КОНСОЛЬ",
+  "band": 26,
+  "erase": "mask-fill",
+  "fit": "image"
+ }
+}

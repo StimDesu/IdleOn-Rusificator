@@ -98,7 +98,7 @@ def shadow_color(img, box):
     x0, y0, x1, y1 = box
     px = img.load()
     cols = Counter()
-    for y in range(y0, y1 - 1):
+    for y in range(max(y0, 1), y1):
         for x in range(x0, x1):
             c, up = px[x, y], px[x, y - 1]
             if c[3] > 200 and not is_white(c[:3]) and lum(c) > 150 and is_white(up[:3]):
@@ -132,21 +132,21 @@ def is_white(c):
     return min(c) > 228 and max(c) - min(c) < 24
 
 
-def auto_box(img, pad):
+def auto_box(img, pad, band=0):
     """bounding box of the light, unsaturated pixels (white lettering), plus its outline"""
     px = img.load()
     xs, ys = [], []
-    for y in range(img.height):
+    for y in range(band, img.height):
         for x in range(img.width):
             r, g, b, a = px[x, y]
             if a > 200 and is_white((r, g, b)):
                 xs.append(x); ys.append(y)
     if not xs:
         return [0, 0, img.width, img.height]
-    return [max(min(xs) - pad, 1), max(min(ys) - pad, 1), min(max(xs) + 1 + pad, img.width - 1), min(max(ys) + 1 + pad, img.height - 1)]
+    return [max(min(xs) - pad, 0), max(min(ys) - pad, 0), min(max(xs) + 1 + pad, img.width), min(max(ys) + 1 + pad, img.height)]
 
 
-def text_mask(img, box):
+def text_mask(img, box, shade=None):
     """white lettering + the dark outline and light shadow touching it"""
     x0, y0, x1, y1 = box
     px = img.load()
@@ -161,7 +161,7 @@ def text_mask(img, box):
                     if q in mask or not (x0 <= q[0] < x1 and y0 <= q[1] < y1):
                         continue
                     r, g, b, a = px[q]
-                    if a > 200 and (max(r, g, b) < 40 or (g > 200 and b > 200 and r < 180)):
+                    if a > 200 and (max(r, g, b) < 40 or (shade is not None and (r, g, b, a) == shade)):
                         grow.add(q)
         mask |= grow
     return mask
@@ -171,6 +171,17 @@ def erase(img, box, mode, shade=None):
     x0, y0, x1, y1 = box
     px = img.load()
     if mode == 'none':
+        return
+    if mode == 'mask-fill':
+        mask = text_mask(img, box, shade)
+        for y in range(y0, y1):
+            body = Counter(px[x, y] for x in range(x0, x1) if (x, y) not in mask and px[x, y][3] > 200 and max(px[x, y][:3]) >= 45)
+            if not body:
+                continue
+            m = body.most_common(1)[0][0]
+            for x in range(x0, x1):
+                if (x, y) in mask:
+                    px[x, y] = m
         return
     if mode == 'rows-fill':
         # buttons are flat along each row: paint the text area with the row's own body colour
@@ -244,16 +255,18 @@ def build_one(name, sp, out_dir):
     img = src.copy()
     box = sp.get('box') or 'auto'
     if box == 'auto':
-        box = auto_box(src, sp.get('pad', 3))
+        box = auto_box(src, sp.get('pad', 3), sp.get('band', 0))
+        if sp.get('erase', 'rows-fill') == 'rows-fill':   # keep the button's own border
+            box = [max(box[0], 1), max(box[1], 1), min(box[2], src.width - 1), min(box[3], src.height - 1)]
     light, dark = text_colors(src, box)
     shade = shadow_color(src, box)
-    wb = auto_box(src, 0)
+    wb = auto_box(src, 0, sp.get('band', 0))
     fill = hexcol(sp['fill']) if sp.get('fill', 'auto') != 'auto' else light
     outline = hexcol(sp['outline']) if sp.get('outline', 'auto') != 'auto' else dark
     erase(img, box, sp.get('erase', 'rows-fill'), shade)
     scale = sp.get('scale', 1)
     lines = sp.get('lines') or sp['text'].split('|')
-    bw = box[2] - box[0]
+    bw = box[2] - box[0] if sp.get('fit') != 'image' else src.width - 6
     # the first font/spacing whose widest line fits the box (bold outlined -> narrower)
     tries = [(sp['font'], sp.get('spacing', 0))] if 'font' in sp else AUTO_FONTS
     for fid, spacing in tries:
@@ -272,10 +285,12 @@ def build_one(name, sp, out_dir):
     th = sum(t.height for t in rendered) + gap * (len(rendered) - 1)
     cy = (wb[1] + wb[3]) / 2 if sp.get('box', 'auto') == 'auto' else (box[1] + box[3]) / 2
     y = int(round(cy - th / 2)) + sp.get('dy', 0)
+    if sp.get('box', 'auto') == 'auto' and sp.get('erase') == 'mask-fill' and wb[3] >= src.height - 1:
+        y = src.height - th + sp.get('dy', 0)   # lettering cut by the bottom edge: keep it there
     for t in rendered:
         if t.width > bw + 2:
             print(f'  {name}: "{lines}" is {t.width}px wide, box {bw}px')
-        x = box[0] + (bw - t.width) // 2 + sp.get('dx', 0)
+        x = (box[0] + box[2] - t.width) // 2 + sp.get('dx', 0)
         img.alpha_composite(t, (x, y))
         y += t.height + gap
     img.save(os.path.join(out_dir, name))

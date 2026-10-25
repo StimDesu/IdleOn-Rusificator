@@ -1,6 +1,8 @@
 {
  "Claim.png": {
-  "text": "ВЗЯТЬ"
+  "text": "ВЗЯТЬ",
+  "font": 309,
+  "spacing": -2
  },
  "Benter.png": {
   "text": "ВОЙТИ"
@@ -39,10 +41,26 @@
   "text": "АКТИВ"
  },
  "CogCollect.png": {
-  "text": "СОБРАТЬ"
+  "text": "СОБРАТЬ",
+  "box": [
+   3,
+   3,
+   54,
+   18
+  ],
+  "font": 309,
+  "spacing": -2
  },
  "TrapBtn.png": {
-  "text": "СОБРАТЬ"
+  "text": "СОБРАТЬ",
+  "box": [
+   3,
+   4,
+   58,
+   20
+  ],
+  "font": 309,
+  "spacing": -2
  },
  "UIObolButtons1.png": {
   "text": "РЕРОЛЛ"
