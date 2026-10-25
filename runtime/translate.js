@@ -174,10 +174,26 @@
         ru = dict.get(s.replace(/ /g, '_'));
         if (ru !== undefined) { RU.stats.draw++; return ru.replace(/_/g, ' '); }
       }
+      ru = trGainLine(s);
+      if (ru !== undefined) { RU.stats.draw++; return ru; }
       if (/[A-Za-z]{3}/.test(s) && untranslated.size < 20000) untranslated.set(s, (untranslated.get(s) || 0) + 1);
       return s;
     }
     RU.tr = tr;
+    // AFK gains popup lines ("*89_Kills", "*3,344_Coins", "*1_Bored_Bean_Card") are glued
+    // together while the save loads, before the data layer has run, so translate the parts here
+    var GAIN_WORDS = { Kills: 'убийств', Coins: 'монет', Main_Exp: 'опыта_класса' };
+    function trGainLine(s) {
+      var m = /^([*^][\d,.]+[A-Za-z]{0,3}_)(.+?)("?)$/.exec(s);
+      if (!m) return undefined;
+      var rest = m[2], ru = GAIN_WORDS[rest];
+      if (ru === undefined) {
+        var card = /^(.+)_Card$/.exec(rest);
+        if (card) ru = 'Карта:_' + (dict.get(card[1]) || card[1]);
+        else ru = dict.get(rest);
+      }
+      return ru === undefined ? undefined : m[1] + ru + m[3];
+    }
     function findProto(method, other) {
       for (var k in HX) {
         var c = HX[k];

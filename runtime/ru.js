@@ -13,6 +13,16 @@
   RU.RU_VALUE = RU_VALUE;
   RU.RU_INDEX = RU_INDEX;
 
+  // __ruL: true while Russian is on; code literals patched by patcher/lib/literals.js read it
+  // Until the save's options have switched to Russian once, trust the stored choice: the AFK
+  // gains popup is built while loading, before OptionsListAccount[153] says 8.
+  Object.defineProperty(g, '__ruL', { configurable: true, get: function () {
+    if (!stored()) return false;
+    if (!RU.isRU) return true;
+    if (RU.isRU()) { RU.ruSeen = true; return true; }
+    return !RU.ruSeen;
+  } });
+
   function stored() { try { return g.localStorage.getItem(STORE) === '1'; } catch (e) { return false; } }
   function store(on) { try { g.localStorage.setItem(STORE, on ? '1' : '0'); } catch (e) {} }
   RU.stored = stored;
@@ -103,7 +113,14 @@
           copy[153] = 1;
           return orig.call(this, type, [args[0], copy]);
         }
-        return orig.apply(this, arguments);
+        var res = orig.apply(this, arguments);
+        // account options arrive from the save: switch to Russian right away, before the
+        // game builds its first screens (AFK gains popup) from them
+        if (type === 'getLoadList' && args && args[0] === 'OptLacc' && Array.isArray(res) && res.length > 153 && stored()) {
+          res[153] = RU_VALUE;
+          setTimeout(function () { if (RU.applyData) RU.applyData(); }, 0);
+        }
+        return res;
       };
       wrapped.__ru = true;
       R.createElement = wrapped;

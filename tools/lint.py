@@ -45,7 +45,8 @@ def check(en, ru):
                 if a != b and not TEXT_TOKEN.search(a):
                     errors.append('record field changed %r -> %r' % (a, b))
                     break
-    for word in re.split(r"""[_ |@,.!?:;()'"«»\-]+""", ru):
+    # ZqX<style> is a tooltip formatting prefix glued to the first word
+    for word in re.split(r"""[_ |@,.!?:;()'"«»\-]+""", re.sub(r'^ZqX(?:none|norm|[a-z])', '', ru)):
         if re.search(r'[А-Яа-яЁё]', word) and re.search(r'[A-Za-z]', word):
             errors.append('mixed Latin/Cyrillic in %r' % word)
             break

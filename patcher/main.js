@@ -13,6 +13,7 @@ const { Archive, writeArchive } = require('./lib/asar');
 const { Pak } = require('./lib/pak');
 const patches = require('./patches');
 const fonts = require('./lib/fonts');
+const { patchLiterals } = require('./lib/literals');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -128,6 +129,12 @@ function build(src, report) {
 
   let njs = src.read(GAME_DIR + 'N.js').toString('utf8');
   njs = applyTextPatches(njs, report);
+  const codeFile = path.join(ROOT, 'translation', 'code.json');
+  if (fs.existsSync(codeFile)) {
+    const r = patchLiterals(njs, readJson(codeFile), comparedLiterals(njs));
+    njs = r.src;
+    report.push('ok   code text: ' + r.count + ' literals');
+  }
 
   const pak = new Pak(njs, src.read(GAME_DIR + 'lib/default.pak'));
   fonts.apply(pak, path.join(ROOT, 'fonts'), report);
