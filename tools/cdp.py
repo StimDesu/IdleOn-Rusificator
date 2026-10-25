@@ -12,6 +12,7 @@ import base64
 import io
 import json
 import sys
+import time
 import urllib.request
 
 import websocket
@@ -91,6 +92,13 @@ def main():
     if cmd == "shot":
         r = page.call("Page.captureScreenshot", format="png")
         open(a[1], "wb").write(base64.b64decode(r["data"]))
+    elif cmd == "profile":  # profile <seconds> <out.json>: CPU profile of the page (game iframe included)
+        page.call("Profiler.enable")
+        page.call("Profiler.start")
+        time.sleep(float(a[1]))
+        r = page.call("Profiler.stop")
+        with open(a[2], "w", encoding="utf-8") as f:
+            json.dump(r["profile"], f)
     elif cmd == "eval":
         expr = open(a[2], encoding="utf-8").read() if a[1] == "-f" else a[1]
         # run in the game iframe through its own eval: no Runtime.enable, which replays the whole
@@ -104,7 +112,6 @@ def main():
         else:
             print(json.dumps(val, ensure_ascii=False, indent=1)[:20000])
     elif cmd == "click":
-        import time
         x, y = float(a[1]), float(a[2])
         page.call("Input.dispatchMouseEvent", type="mouseMoved", x=x, y=y)
         time.sleep(0.05)
@@ -112,7 +119,6 @@ def main():
             page.call("Input.dispatchMouseEvent", type=t, x=x, y=y, button="left", clickCount=1)
             time.sleep(0.08)
     elif cmd == "watch":  # watch <seconds> [js]: run js in the game frame, print console output
-        import time
         page.call("Log.enable")
         ctx = game_context(page)
         if len(a) > 2:
@@ -136,7 +142,6 @@ def main():
                 e = msg["params"]["entry"]
                 print("LOG", e.get("level"), e.get("text", "")[:500], e.get("url", ""))
     elif cmd == "key":  # key <char> [hold ms]
-        import time
         k = a[1]
         code = {"left": ("ArrowLeft", 37), "right": ("ArrowRight", 39), "up": ("ArrowUp", 38),
                 "down": ("ArrowDown", 40), "esc": ("Escape", 27), "enter": ("Enter", 13)}.get(k) or (k, ord(k.upper()))

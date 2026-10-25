@@ -97,7 +97,8 @@
       if (!R || !R.createElement || R.createElement.__ru) return;
       var orig = R.createElement;
       var wrapped = function (type, args) {
-        if (type === 'addSaveEntryList' && args && args[0] === 'OptionsListAccount' && Array.isArray(args[1]) && Number(args[1][153]) === RU_VALUE) {
+        // the game saves OptionsListAccount under the key "OptLacc"; match the array itself
+        if (type === 'addSaveEntryList' && args && Array.isArray(args[1]) && (args[1] === options() || args[0] === 'OptLacc') && Number(args[1][153]) === RU_VALUE) {
           var copy = args[1].slice();
           copy[153] = 1;
           return orig.call(this, type, [args[0], copy]);
@@ -107,6 +108,29 @@
       wrapped.__ru = true;
       R.createElement = wrapped;
     }
+
+    // ---- local save (Script.saveGame -> SharedObject): same rule, and no translated data ----
+    // The local save holds the raw game attributes; an unpatched game reading [153]=8 or our
+    // Russian strings from it would break, so the save is written from the English state.
+    var Script = null;
+    for (var sk in HX) {
+      var sc = HX[sk];
+      if (sc && typeof sc.saveGame === 'function' && typeof sc.loadGame === 'function') { Script = sc; break; }
+    }
+    if (Script && !Script.saveGame.__ru) {
+      var origSave = Script.saveGame;
+      Script.saveGame = function () {
+        var o = options(), was = o && Number(o[153]) === RU_VALUE, data = was && RU.revertData;
+        if (was) o[153] = 1;
+        if (data) RU.revertData();
+        try { return origSave.apply(this, arguments); }
+        finally {
+          if (was) o[153] = RU_VALUE;
+          if (data && RU.applyData) RU.applyData();
+        }
+      };
+      Script.saveGame.__ru = true;
+    } else if (!Script) log('saveGame not found');
 
     // ---- keep the language choice in sync with localStorage ----------------------------
     var lastOptions = null, lastValue = null, prevLang = 1;
