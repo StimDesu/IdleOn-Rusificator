@@ -189,25 +189,33 @@ def text_colors(img, box):
     return light, dark
 
 
+LIGHT = [None]
+DARK = [None]    # outline colour of the original lettering   # luminance threshold for non-white lettering (set per image)
+
+
 def is_white(c):
-    return min(c) > 228 and max(c) - min(c) < 24
+    if LIGHT[0] is not None:
+        return lum(c) >= LIGHT[0]
+    return min(c) > 200 and lum(c) > 222
 
 
 def auto_box(img, pad, band=0):
     """bounding box of the light, unsaturated pixels (white lettering), plus its outline"""
     px = img.load()
     xs, ys = [], []
+    def lit(x, y):
+        return 0 <= x < img.width and 0 <= y < img.height and px[x, y][3] > 200 and is_white(px[x, y][:3])
     for y in range(band, img.height):
         for x in range(img.width):
-            r, g, b, a = px[x, y]
-            if a > 200 and is_white((r, g, b)):
+            # lettering strokes, not lone sparkles: at least 2 lit neighbours
+            if lit(x, y) and sum(lit(x + dx, y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy) >= 2:
                 xs.append(x); ys.append(y)
     if not xs:
         return [0, 0, img.width, img.height]
     return [max(min(xs) - pad, 0), max(min(ys) - pad, 0), min(max(xs) + 1 + pad, img.width), min(max(ys) + 1 + pad, img.height)]
 
 
-def text_mask(img, box, shade=None):
+def text_mask(img, box, shade=None, dark=None):
     """white lettering + the dark outline and light shadow touching it"""
     x0, y0, x1, y1 = box
     px = img.load()
@@ -222,7 +230,8 @@ def text_mask(img, box, shade=None):
                     if q in mask or not (x0 <= q[0] < x1 and y0 <= q[1] < y1):
                         continue
                     r, g, b, a = px[q]
-                    if a > 200 and (max(r, g, b) < 40 or (shade is not None and (r, g, b, a) == shade)):
+                    if a > 200 and (max(r, g, b) < 40 or (shade is not None and (r, g, b, a) == shade)
+                                    or (dark is not None and abs(lum((r, g, b)) - lum(dark)) < 18 and lum((r, g, b)) < 90)):
                         grow.add(q)
         mask |= grow
     return mask
@@ -239,7 +248,7 @@ def erase(img, box, mode, shade=None):
                 px[x, y] = (0, 0, 0, 0)
         return
     if mode == 'mask-fill':
-        mask = text_mask(img, box, shade)
+        mask = text_mask(img, box, shade, DARK[0])
         for y in range(y0, y1):
             body = Counter(px[x, y] for x in range(x0, x1) if (x, y) not in mask and px[x, y][3] > 200 and max(px[x, y][:3]) >= 45)
             if not body:
@@ -318,6 +327,7 @@ FONT_CACHE = {}
 
 
 def build_one(name, sp, out_dir):
+    LIGHT[0] = sp.get('light')
     src = Image.open(os.path.join(GAME, 'data', name)).convert('RGBA')
     img = src.copy()
     box = sp.get('box') or 'auto'
@@ -329,6 +339,10 @@ def build_one(name, sp, out_dir):
         if sp.get('erase', 'rows-fill') == 'rows-fill':   # keep the button's own border
             box = [max(box[0], 1), max(box[1], 1), min(box[2], src.width - 1), min(box[3], src.height - 1)]
     light, dark = text_colors(src, box)
+    # the outline colour helps the eraser only when it is not the background itself
+    bx = src.crop(tuple(box)).convert('RGBA')
+    common = Counter(bx.get_flattened_data() if hasattr(bx, "get_flattened_data") else bx.getdata()).most_common(1)[0][0]
+    DARK[0] = dark if dark != common else None
     shade = shadow_color(src, box) if sp.get('erase') != 'clear' else None
     wb = auto_box(src, 0, sp.get('band', 0)) if sp.get('erase') != 'clear' else box
     fill = hexcol(sp['fill']) if sp.get('fill', 'auto') != 'auto' else light

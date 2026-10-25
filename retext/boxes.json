@@ -1,0 +1,58 @@
+{
+ "_": "white captions inside framed boxes",
+ "PopupNum15.png": {
+  "text": "ОТКРОЙ МИР 3,|ЧТОБЫ КУПИТЬ",
+  "erase": "mask-fill"
+ },
+ "PopupNum16.png": {
+  "text": "ОТКРОЙ МИР 4,|ЧТОБЫ КУПИТЬ",
+  "erase": "mask-fill"
+ },
+ "PopupNum17.png": {
+  "text": "ОТКРОЙ МИР 5,|ЧТОБЫ КУПИТЬ",
+  "erase": "mask-fill"
+ },
+ "PopupNum17b.png": {
+  "text": "ОТКРОЙ МИР 6,|ЧТОБЫ КУПИТЬ",
+  "erase": "mask-fill"
+ },
+ "PopupNum17c.png": {
+  "text": "ОТКРОЙ МИР 7,|ЧТОБЫ КУПИТЬ",
+  "erase": "mask-fill"
+ },
+ "Popup16.png": {
+  "text": "НЕ БОЛЬШЕ 100|РАЗ В ДЕНЬ",
+  "erase": "mask-fill"
+ },
+ "Popup32.png": {
+  "text": "БОНУС ВЫСЛАН!",
+  "erase": "mask-fill"
+ },
+ "PopupNum22.png": {
+  "text": "НЕЛЬЗЯ БРАТЬ|ЗОЛОТЫЕ ЧАСЫ|ВО ВРЕМЯ ИВЕНТА",
+  "erase": "mask-fill"
+ },
+ "Popup34.png": {
+  "text": "ОБУЧЕНИЕ|ЗАВЕРШЕНО!",
+  "box": [
+   16,
+   12,
+   262,
+   78
+  ],
+  "erase": "rows-fill",
+  "big": true,
+  "fill": "#fff9b0",
+  "outline": "#1c1406"
+ },
+ "Popup17.png": {
+  "text": "ДАРОМ!",
+  "erase": "rows-fill",
+  "box": [
+   3,
+   4,
+   82,
+   24
+  ]
+ }
+}
