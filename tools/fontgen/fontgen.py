@@ -112,11 +112,31 @@ def font_paths(pak, fid):
     return (f'{pak}/assets/graphics/1x/font-{fid}.fnt', f'{pak}/assets/graphics/1x/font-{fid}.png')
 
 
+class ScaledFamily:
+    """a family drawn k times bigger (the game's zoomed title fonts): every pixel -> k x k"""
+    def __init__(self, base, k):
+        self.base, self.k = base, k
+        self.name = f'{base.name}x{k}'
+        self.masks = {L: self._up(m) for L, m in base.masks.items()}
+        self.adv = {L: a * k for L, a in base.adv.items()}
+        self.origin = (base.origin[0] * k, base.origin[1] * k)
+
+    def _up(self, m):
+        k = self.k
+        return {(x * k + dx, y * k + dy) for x, y in m for dx in range(k) for dy in range(k)}
+
+    def body(self, ch, seen=()):
+        b = self.base.body(ch, seen)
+        return self._up(b) if b else b
+
+    advance_for = Family.advance_for
+
+
 def load_families(pak):
     fams = []
     for p in sorted(glob.glob(os.path.join(HERE, 'designs', '*.txt'))):
         fams.append(Family(os.path.splitext(os.path.basename(p))[0], p, pak))
-    return fams
+    return fams + [ScaledFamily(f, 2) for f in fams]
 
 
 # ---- matching a font to a family ------------------------------------------------------
@@ -126,8 +146,9 @@ def match(fam, glyphs):
     letters = [L for L in glyphs if L in fam.masks]
     if len(letters) < 20:
         return None
-    for dy in range(-3, 4):
-        for dx in range(-3, 4):
+    r = 3 * getattr(fam, 'k', 1)
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
             bodies, used = [], []
             for L in letters:
                 b = shift(fam.masks[L], (dx, dy))
@@ -180,7 +201,7 @@ def cyrillic(glyphs, fams):
 def render_font(fid, pak, fams, out_dir):
     chars, img, info = load_font(*font_paths(pak, fid))
     glyphs = {L: glyph_pixels(img, chars[ord(L)]) for L in LATIN if ord(L) in chars and chars[ord(L)]['w'] and chars[ord(L)]['h']}
-    if len(glyphs) < 30:
+    if len(glyphs) < 20:
         return None
     st, out = cyrillic(glyphs, fams)
     st['id'] = fid

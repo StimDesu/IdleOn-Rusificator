@@ -61,9 +61,38 @@ class Font:
             if gw and gh:
                 piece = sh.crop((gx, gy, gx + gw, gy + gh))
                 img.alpha_composite(piece, (x + xo, 10 + yo))
-            x += adv + spacing
+            x += adv + spacing + (3 if ch == ' ' and spacing < 0 else 0)
         bb = img.getbbox()
         return img.crop(bb) if bb else img
+
+
+def big_letters(font, text, spacing, scale, fill, outline):
+    """letter bodies of a small font scaled up, with a fresh 1px outline (pop-up captions)"""
+    t = font.render(text, spacing)
+    px = t.load()
+    cols = [px[x, y] for x in range(t.width) for y in range(t.height) if px[x, y][3]]
+    if not cols:
+        return t
+    hi = max(lum(c) for c in cols)
+    body = [(x, y) for x in range(t.width) for y in range(t.height) if px[x, y][3] and lum(px[x, y]) > hi * 0.6]
+    W, H = t.width * scale + 2, t.height * scale + 2
+    out = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    o = out.load()
+    filled = set()
+    for (x, y) in body:
+        for dx in range(scale):
+            for dy in range(scale):
+                filled.add((1 + x * scale + dx, 1 + y * scale + dy))
+    for (x, y) in filled:
+        for ax in (-1, 0, 1):
+            for ay in (-1, 0, 1):
+                q = (x + ax, y + ay)
+                if q not in filled and 0 <= q[0] < W and 0 <= q[1] < H:
+                    o[q] = tuple(outline[:3]) + (255,)
+    for (x, y) in filled:
+        o[x, y] = tuple(fill[:3]) + (255,)
+    bb = out.getbbox()
+    return out.crop(bb) if bb else out
 
 
 def hexcol(s):
@@ -104,6 +133,38 @@ def shadow_color(img, box):
             if c[3] > 200 and not is_white(c[:3]) and lum(c) > 150 and is_white(up[:3]):
                 cols[c] += 1
     return cols.most_common(1)[0][0] if cols and cols.most_common(1)[0][1] >= 3 else None
+
+
+def row_fills(img, box):
+    """for each row of the box: its most common bright colour (the letter fill)"""
+    x0, y0, x1, y1 = box
+    px = img.load()
+    out = []
+    for y in range(y0, y1):
+        cols = Counter(px[x, y] for x in range(x0, x1) if px[x, y][3] > 200 and lum(px[x, y]) > 90)
+        if cols:
+            out.append(cols.most_common(1)[0][0])
+    return out
+
+
+def regrade(t, fills, outline):
+    """repaint the light part of rendered text with the original's top-to-bottom colours"""
+    if not fills:
+        return t
+    px = t.load()
+    ol = tuple(outline[:3])
+    rows = [y for y in range(t.height) if any(px[x, y][3] and px[x, y][:3] != ol for x in range(t.width))]
+    if not rows:
+        return t
+    top, bot = rows[0], rows[-1]
+    for y in range(t.height):
+        f = fills[min(len(fills) - 1, int((y - top) / max(1, bot - top + 1) * len(fills)))] if top <= y <= bot else None
+        for x in range(t.width):
+            c = px[x, y]
+            if c[3] and c[:3] != ol and f is not None:
+                k = lum(c) / 255.0
+                px[x, y] = tuple(int(f[i] * (0.75 + 0.25 * k)) for i in range(3)) + (c[3],)
+    return t
 
 
 def add_shadow(t, fill, shade):
@@ -171,6 +232,11 @@ def erase(img, box, mode, shade=None):
     x0, y0, x1, y1 = box
     px = img.load()
     if mode == 'none':
+        return
+    if mode == 'clear':
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                px[x, y] = (0, 0, 0, 0)
         return
     if mode == 'mask-fill':
         mask = text_mask(img, box, shade)
@@ -246,6 +312,7 @@ def preview(names, out_dir, out_png, zoom=3):
     out.save(out_png)
 
 
+BIG_FONTS = [(259, 0), (259, -1), (322, 0), (322, -1), (309, 0), (309, -1), (309, -2)]
 AUTO_FONTS = [(309, 0), (309, -1), (309, -2), (109, 0), (109, -1), (75, -1)]
 FONT_CACHE = {}
 
@@ -254,28 +321,50 @@ def build_one(name, sp, out_dir):
     src = Image.open(os.path.join(GAME, 'data', name)).convert('RGBA')
     img = src.copy()
     box = sp.get('box') or 'auto'
-    if box == 'auto':
+    if box == 'auto' and sp.get('erase') == 'clear':
+        box = list(src.crop((0, sp.get('band', 0), src.width, src.height)).getbbox())
+        box[1] += sp.get('band', 0); box[3] += sp.get('band', 0)
+    elif box == 'auto':
         box = auto_box(src, sp.get('pad', 3), sp.get('band', 0))
         if sp.get('erase', 'rows-fill') == 'rows-fill':   # keep the button's own border
             box = [max(box[0], 1), max(box[1], 1), min(box[2], src.width - 1), min(box[3], src.height - 1)]
     light, dark = text_colors(src, box)
-    shade = shadow_color(src, box)
-    wb = auto_box(src, 0, sp.get('band', 0))
+    shade = shadow_color(src, box) if sp.get('erase') != 'clear' else None
+    wb = auto_box(src, 0, sp.get('band', 0)) if sp.get('erase') != 'clear' else box
     fill = hexcol(sp['fill']) if sp.get('fill', 'auto') != 'auto' else light
     outline = hexcol(sp['outline']) if sp.get('outline', 'auto') != 'auto' else dark
+    fills = None
+    lines_n = len(sp.get('lines') or sp['text'].split('|'))
+    if sp.get('colors') == 'rows':
+        # one line of the original is enough to learn the colours
+        allf = row_fills(src, box)
+        orig_lines = sp.get('orig_lines', lines_n)
+        fills = allf[:max(1, len(allf) // orig_lines)]
     erase(img, box, sp.get('erase', 'rows-fill'), shade)
     scale = sp.get('scale', 1)
     lines = sp.get('lines') or sp['text'].split('|')
     bw = box[2] - box[0] if sp.get('fit') != 'image' else src.width - 6
     # the first font/spacing whose widest line fits the box (bold outlined -> narrower)
-    tries = [(sp['font'], sp.get('spacing', 0))] if 'font' in sp else AUTO_FONTS
-    for fid, spacing in tries:
+    tries = [(sp['font'], sp.get('spacing', 0))] if 'font' in sp else (BIG_FONTS if sp.get('big') else AUTO_FONTS)
+    if sp.get('big') == 'x2':
+        tries = [(309, -2, 2), (322, 0, 1), (322, -1, 1)]
+    for tr_ in tries:
+        fid, spacing = tr_[0], tr_[1]
+        big = tr_[2] if len(tr_) > 2 else 0
         font = FONT_CACHE.get(fid) or FONT_CACHE.setdefault(fid, Font(fid))
         rendered = []
         for ln in lines:
+            if big > 1:
+                t = big_letters(font, ln, spacing, big, fill, outline)
+                if sp.get('colors') == 'rows':
+                    t = regrade(t, fills, outline)
+                rendered.append(t)
+                continue
             t = recolor(font.render(ln, spacing), fill, outline)
             if shade and sp.get('shadow', True):
                 t = add_shadow(t, fill, shade)
+            if sp.get('colors') == 'rows':
+                t = regrade(t, fills, outline)
             if scale != 1:
                 t = t.resize((t.width * scale, t.height * scale), Image.NEAREST)
             rendered.append(t)

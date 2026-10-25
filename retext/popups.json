@@ -1,0 +1,147 @@
+{
+ "_": "pop-up captions on transparent background",
+ "Popup11.png": {
+  "text": "ПРЕДМЕТ|ЗАКРЫТ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "PopupNum20.png": {
+  "text": "СНАЧАЛА|СНИМИ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "FullInventPopup.png": {
+  "text": "ИНВЕНТАРЬ|ПОЛОН",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "popupCr.png": {
+  "text": "СНАЧАЛА|ВЫБЕРИ|ПЕРСОНАЖА!",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 3,
+  "big": true,
+  "fit": "image"
+ },
+ "popupNum10.png": {
+  "text": "НУЖЕН|УР. ВЫШЕ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "PopupG.png": {
+  "text": "НУЖЕН 30|УРОВЕНЬ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "moreMP.png": {
+  "text": "МАЛО|МАНЫ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "PopupNum11.png": {
+  "text": "НЕТ|ФЛАКОНА",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "PopupNum12.png": {
+  "text": "НЕТ ПОПЫТОК|НА СЕГОДНЯ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "PopupNum13.png": {
+  "text": "НЕЛЬЗЯ|В МЕНЮ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "PopupCnt.png": {
+  "text": "НЕЛЬЗЯ НАДЕТЬ|ДВА",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "PopupCntE.png": {
+  "text": "НЕЛЬЗЯ НАДЕТЬ|В БОЮ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "PopupNewF.png": {
+  "text": "РЫБКА|ЦЕЛА!",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "uiCraft1.png": {
+  "text": "СДЕЛАНО!",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 1,
+  "big": true,
+  "fit": "image"
+ },
+ "uiCraft2.png": {
+  "text": "СУПЕР|СДЕЛАНО!",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "dblexp.png": {
+  "text": "x2 ОПЫТ",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 1,
+  "big": true,
+  "fit": "image"
+ },
+ "NewTab.png": {
+  "text": "ВКЛАДКА|ОТКРЫТА",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 2,
+  "big": true,
+  "fit": "image"
+ },
+ "NewItemAnimation1.png": {
+  "text": "НОВИНКА!",
+  "erase": "clear",
+  "colors": "rows",
+  "orig_lines": 1,
+  "big": true,
+  "fit": "image"
+ }
+}
