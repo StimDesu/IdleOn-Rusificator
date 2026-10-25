@@ -54,6 +54,7 @@
         var k = isArr ? i : list[i];
         var x = c[k];
         if (typeof x === 'string') {
+          if (!isArr && DESC_KEY.test(k)) continue;   // whole descriptions only, see applyItems
           var ru = dict.get(x);
           if (ru !== undefined && ru !== x && !protectedStr.has(x) && !keys.has(x)) {
             c[k] = ru;
@@ -61,6 +62,22 @@
           }
         } else if (x && typeof x === 'object') replaceIn(x, depth + 1);
       }
+    }
+    // The game rebuilds ItemDefinitionsGET / MonsterDefinitionsGET / DialogueDefGET as deep
+    // copies of these cached static maps (when the live map is empty, e.g. around saves), so
+    // the sources are translated too and every new copy comes out Russian.
+    var SOURCES = ['scripts.ItemDefinitions', 'scripts.ItemDefinitions2', 'scripts.ItemDefinitions3',
+      'scripts.ItemDefinitions4', 'scripts.ItemDefinitions5', 'scripts.ItemDefinitions6',
+      'scripts.MonsterDefinitions', 'scripts.DialogueDefinitions', 'scripts.DialogueDefinitions2',
+      'scripts.CustomMaps'];
+    function sources() {
+      var out = [];
+      for (var i = 0; i < SOURCES.length; i++) {
+        var c = HX[SOURCES[i]], m = null;
+        try { m = c && typeof c.get === 'function' ? c.get() : null; } catch (e) {}
+        if (m && typeof m === 'object') out.push(m);
+      }
+      return out;
     }
     function eachRoot(f) {
       for (var r = 0; r < ROOTS.length; r++) {
@@ -71,13 +88,36 @@
           for (var name in h) if (!SKIP.test(name)) f(h[name]);
         } else f(root);
       }
+      sources().forEach(function (m) { f(m); });
+    }
+    // copies made from translated sources are not in `applied`: put them back to English
+    // through the reverse of what was applied
+    var DESC_KEY = /^desc_line\d+$/;
+    function revertCopies(rev, v, depth) {
+      if (depth > 9) return;
+      var c = children(v);
+      if (!c) return;
+      var isArr = Array.isArray(c);
+      var list = isArr ? null : Object.keys(c);
+      var n = isArr ? c.length : list.length;
+      for (var i = 0; i < n; i++) {
+        var k = isArr ? i : list[i], x = c[k];
+        if (typeof x === 'string') {
+          if (isArr || !DESC_KEY.test(k)) { var en = rev.get(x); if (en !== undefined) c[k] = en; }
+        }
+        else if (x && typeof x === 'object') revertCopies(rev, x, depth + 1);
+      }
     }
     function revertData() {
+      if (!applied.length) return;
+      var rev = new Map();
       for (var i = applied.length - 1; i >= 0; i--) {
         var a = applied[i];
+        if (typeof a[1] !== 'string' || !DESC_KEY.test(a[1])) rev.set(a[3], a[2]);
         if (a[0][a[1]] === a[3]) a[0][a[1]] = a[2];
       }
       applied = [];
+      eachRoot(function (v) { revertCopies(rev, v, 0); });
     }
     // Item descriptions are pre-split into desc_line1..8, so they are translated as a whole
     // (DATA.descs["line1|line2|..."] = "Russian text", '|' = forced break) and the Russian text
@@ -101,9 +141,12 @@
       c[k] = ru;
     }
     function applyItems() {
-      var defs = RU.attr('ItemDefinitionsGET');
-      if (!defs) return;
-      defs = defs.h || defs;
+      // only the live map: copies from the sources keep English lines, so they can always
+      // be matched against DESCS and reverted exactly
+      var live = RU.attr('ItemDefinitionsGET');
+      if (live) applyItemMap(live.h || live);
+    }
+    function applyItemMap(defs) {
       for (var id in defs) {
         var it = defs[id], h = it && (it.h || it);
         if (!h || h.desc_line1 == null) continue;
@@ -138,9 +181,17 @@
       for (var r = 0; r < ROOTS.length; r++) {
         var root = RU.attr(ROOTS[r]);
         s.push(root);
-        if (root && (ROOTS[r] === 'CustomLists' || ROOTS[r] === 'CustomMaps')) {
-          var h = root.h || root;
+        if (!root) continue;
+        var h = root.h || root;
+        s.push(h);
+        if (ROOTS[r] === 'CustomLists' || ROOTS[r] === 'CustomMaps') {
           for (var name in h) s.push(h[name]);
+        } else {
+          // definitions are filled in place while the save loads: watch the entry count and
+          // the first and last entries, so a refill is noticed and translated again
+          var n = 0, first, last;
+          for (var id in h) { if (!n) first = h[id]; last = h[id]; n++; }
+          s.push(n, first, last);
         }
       }
       return s;
@@ -150,11 +201,20 @@
       for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
       return true;
     }
+    // a few applied values: if the game writes English back into them, translate again
+    function overwritten() {
+      var step = Math.max(1, Math.floor(applied.length / 40));
+      for (var i = 0; i < applied.length; i += step) {
+        var a = applied[i];
+        if (a[0][a[1]] !== a[3]) return true;
+      }
+      return false;
+    }
     var lastRU = false;
     setInterval(function () {
       var on = !!RU.isRU && RU.isRU();
       var sig = currentSignature();
-      if (on !== lastRU || (on && !sameSig(sig, signature))) {
+      if (on !== lastRU || (on && (!sameSig(sig, signature) || overwritten()))) {
         signature = sig;
         lastRU = on;
         try { applyData(); } catch (e) { RU.logf('applyData: ' + (e && e.stack || e)); }
@@ -165,6 +225,7 @@
     // ---- drawing layer --------------------------------------------------------------
     // strings still drawn in English while Russian is on (for finding what to translate)
     var untranslated = RU.untranslated = new Map();
+    var upper = null;
     function tr(s) {
       if (typeof s !== 'string' || s.length < 3) return s;
       var ru = dict.get(s);
@@ -173,6 +234,12 @@
       if (s.indexOf(' ') >= 0) {
         ru = dict.get(s.replace(/ /g, '_'));
         if (ru !== undefined) { RU.stats.draw++; return ru.replace(/_/g, ' '); }
+      }
+      // protected names stay English in the data; tooltip titles draw them in capitals
+      if (s === s.toUpperCase()) {
+        if (!upper) { upper = new Map(); protectedStr.forEach(function (k) { var r = dict.get(k); if (r) upper.set(k.toUpperCase(), r.toUpperCase()); }); }
+        ru = upper.get(s) || upper.get(s.replace(/ /g, '_'));
+        if (ru !== undefined) { RU.stats.draw++; return s.indexOf(' ') >= 0 ? ru.replace(/_/g, ' ') : ru; }
       }
       ru = trGainLine(s);
       if (ru !== undefined) { RU.stats.draw++; return ru; }

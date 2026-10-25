@@ -143,7 +143,9 @@
         try { return origSave.apply(this, arguments); }
         finally {
           if (was) o[153] = RU_VALUE;
-          if (data && RU.applyData) RU.applyData();
+          // the game swaps its data maps for empty ones around saveGame and puts them back
+          // right after it returns, so translate again once the real maps are back
+          if (data && RU.applyData) setTimeout(function () { RU.applyData(); }, 0);
         }
       };
       Script.saveGame.__ru = true;
