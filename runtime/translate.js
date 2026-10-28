@@ -39,6 +39,9 @@
       if (Array.isArray(c)) { for (var i = 0; i < c.length; i++) if (c[i] && typeof c[i] === 'object') collectKeys(c[i], depth + 1); return; }
       for (var k in c) {
         keys.add(k);
+        // "Bravery" is an id too when the game builds "Bravery_Monument" from it
+        var u = k.indexOf('_');
+        if (u > 0) keys.add(k.slice(0, u));
         var x = c[k];
         if (x && typeof x === 'object') collectKeys(x, depth + 1);
       }

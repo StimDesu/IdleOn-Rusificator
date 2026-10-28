@@ -28,6 +28,13 @@
       if (!CYR.test(s)) return s;
       var en = rev.get(s);
       if (en !== undefined) return en;
+      // ids the game glues from a list entry and a suffix ("Bravery" + "_Monument"): an older
+      // build translated the entry and "Храбрость_Monument" reached the save, where no monster
+      // has that id and the game stops on load
+      for (var i = s.indexOf('_'); i > 0; i = s.indexOf('_', i + 1)) {
+        en = rev.get(s.slice(0, i));
+        if (en !== undefined && !CYR.test(s.slice(i))) return en + s.slice(i);
+      }
       var c = s.charAt(0);
       if (c === '[' || c === '{') {          // JSON lists saved as strings
         try { return JSON.stringify(clean(JSON.parse(s), 0)); } catch (e) {}
@@ -59,7 +66,17 @@
             return orig.call(this, type, [args[0], fixed]);
           } catch (e) {}
         }
-        return orig.apply(this, arguments);
+        var res = orig.apply(this, arguments);
+        // and the other way: Russian that an older build left in the save is read back as English
+        if (typeof type === 'string' && type.indexOf('getLoad') === 0 && hasCyr(res, 0)) {
+          try {
+            var en = clean(res, 0);
+            if (RU.logf) RU.logf('load: ' + (args && args[0]) + ' read back in English');
+            if (Array.isArray(res) && Array.isArray(en)) { for (var i = 0; i < en.length; i++) res[i] = en[i]; }
+            else res = en;
+          } catch (e) {}
+        }
+        return res;
       };
       wrapped.__ru = orig.__ru;
       wrapped.__ruSave = true;
@@ -68,6 +85,9 @@
 
     // quest helper rows: ["QuestId", label, have, need, label, have, need, ...]
     function fixMemory() {
+      // AFK target is a monster id: a Russian one makes the game stop
+      var t = RU.attr('AFKtarget'), E = HX['com.stencyl.Engine'];
+      if (typeof t === 'string' && CYR.test(t) && E && E.engine) E.engine.gameAttributes.h.AFKtarget = toEn(t);
       var q = RU.attr('QuestHelperMenu');
       if (!Array.isArray(q)) return;
       for (var i = 0; i < q.length; i++) {
