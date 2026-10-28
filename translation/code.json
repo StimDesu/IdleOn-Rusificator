@@ -1316,7 +1316,7 @@
  "DRAG_4_AMOEBA_CELLS_INTO_THE_JELLY,_THEY_WILL_ATTACK_THE_OBSTRUCTION!": "ПЕРЕТАЩИ_4_АМЁБЫ_В_ЖЕЛЕ,_ОНИ_АТАКУЮТ_ЗАКУПОРКУ!",
  "YOU_EARNED_BLOODCELLS_FROM_DOING_DAMAGE,_GO_SPEND_THEM_ON_UPGRADES!": "ЗА_УРОН_ТЫ_ПОЛУЧИЛ_КРОВЯНЫЕ_ТЕЛЬЦА,_ТРАТЬ_ИХ_НА_УЛУЧШЕНИЯ!",
  "YOU_HAVE_SOME_EMPTY_SLOTS,_FILL_THEM_WITH_AMOEBA_CELLS!": "ЕСТЬ_ПУСТЫЕ_ЯЧЕЙКИ,_ЗАПОЛНИ_ИХ_АМЁБАМИ!",
- "Effect_has": "Эффект_имеет",
+ "Effect_has": "Эффект",
  "TOTAL_PASSIVES;": "ВСЕГО_ПАССИВОК:",
  "Operational_failure._Jelly_has_been_restabilized,_but_the_": "Операция_провалена._Желе_стабилизировано,_но_закупорка_",
  "_obstruction_remains.": "_осталась.",
@@ -1601,5 +1601,17 @@
  "min_": "мин_",
  "sec": "сек",
  "days_": "д_",
- "0days_0hr_0min": "0д_0ч_0мин"
+ "0days_0hr_0min": "0д_0ч_0мин",
+ "worn_off": "закончился",
+ "when_active": "пока_активно",
+ "this_cutscene": "эту_сценку",
+ "Have_": "Имей_",
+ "_pearls": "_жемчужин",
+ "at_the_same_time": "одновременно,",
+ "to_unlock_this_upgrade": "чтобы_открыть_улучшение",
+ "______Total_Bonus:+": "______Общий_бонус:+",
+ "___CONSTRUCTION___": "___СТРОИТЕЛЬСТВО___",
+ "____RESEARCH_EXP____": "____ОПЫТ_ИССЛЕДОВАНИЙ____",
+ "___STAMINA_REGEN___": "___ВОССТ._ВЫНОСЛИВОСТИ___",
+ "CAVERN_": "ПЕЩЕРА_"
 }
