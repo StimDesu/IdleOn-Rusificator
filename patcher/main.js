@@ -115,7 +115,10 @@ function buildRuntimeData(njs, report) {
   const ruImgDir = path.join(ROOT, 'pak', 'assets', 'data', 'ru');
   const images = fs.existsSync(ruImgDir) ? fs.readdirSync(ruImgDir).filter(f => f.endsWith('.png')) : [];
   report.push('ok   Russian images: ' + images.length);
-  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, descs: descs, protect: protect, rev: rev, images: images }) + ';\n';
+  // fonts that receive Cyrillic glyphs (runtime/translate.js draws Russian text in one of
+  // them when the game's font has none)
+  const fontIds = fs.readdirSync(path.join(ROOT, 'fonts')).map(f => /^font-(\d+)\.json$/.exec(f)).filter(Boolean).map(m => Number(m[1]));
+  return 'globalThis.__IDLEON_RU_DATA__=' + JSON.stringify({ dict: dict, descs: descs, protect: protect, rev: rev, images: images, fonts: fontIds }) + ';\n';
 }
 
 // Returns {path: Buffer} of files to write into the archive.

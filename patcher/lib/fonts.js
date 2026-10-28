@@ -43,6 +43,13 @@ function apply(pak, dir, report) {
       '<char id="' + c.id + '" x="' + c.x + '" y="' + (c.y + top) + '" width="' + c.width + '" height="' + c.height +
       '" xoffset="' + c.xoffset + '" yoffset="' + c.yoffset + '" xadvance="' + c.xadvance + '" page="0" chnl="0"/>');
     xml = xml.replace('</chars>', add.join('\n') + '\n</chars>');
+    // Ё/Й marks above the capitals have a negative yoffset, and the engine renders a string
+    // into an image starting at the line top, so they were cut off: move the whole font down
+    const lift = -Math.min(0, ...spec.chars.map(c => c.yoffset));
+    if (lift) {
+      xml = xml.replace(/(<char [^>]*\byoffset=")(-?\d+)"/g, (s, a, y) => a + (Number(y) + lift) + '"');
+      xml = xml.replace(/(lineHeight|base)="(\d+)"/g, (s, k, v) => k + '="' + (Number(v) + lift) + '"');
+    }
     xml = xml.replace(/<chars count="(\d+)"/, (s, k) => '<chars count="' + (Number(k) + add.length) + '"');
     xml = xml.replace(/scaleW="\d+"/, 'scaleW="' + img.width + '"').replace(/scaleH="\d+"/, 'scaleH="' + img.height + '"');
     pak.set(fntId, Buffer.from(xml, 'utf8'), 'TEXT');

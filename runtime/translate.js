@@ -244,14 +244,28 @@
         ru = upper.get(s) || upper.get(s.replace(/ /g, '_'));
         if (ru !== undefined) { RU.stats.draw++; return s.indexOf(' ') >= 0 ? ru.replace(/_/g, ' ') : ru; }
       }
+      if (composite.has(s)) return composite.get(s);
       ru = trGainLine(s);
-      if (ru !== undefined) { RU.stats.draw++; return ru; }
-      ru = trTruncated(s);
+      if (ru === undefined) ru = trTruncated(s);
+      if (ru === undefined) ru = trLabel(s);
+      if (composite.size > 20000) composite.clear();
+      composite.set(s, ru === undefined ? s : ru);
       if (ru !== undefined) { RU.stats.draw++; return ru; }
       if (/[A-Za-z]{3}/.test(s) && untranslated.size < 20000) untranslated.set(s, (untranslated.get(s) || 0) + 1);
       return s;
     }
     RU.tr = tr;
+    // results of the slower lookups below (strings are drawn every frame)
+    var composite = new Map();
+    // "Green_Mushroom:" (Death Note), "COPPER SET: +60% ..." (set list): a label and a colon,
+    // maybe followed by more text; each part is translated on its own
+    function trLabel(s) {
+      var m = /^([^:;]+?)([:;][_ ]?)(.*)$/.exec(s);
+      if (!m || m[1].length < 3) return undefined;
+      var head = tr(m[1]), tail = m[3] ? tr(m[3]) : '';
+      if (head === m[1] && tail === m[3]) return undefined;
+      return head + m[2] + tail;
+    }
     // long texts cut to fit a box ("*Warrior,_Archer_or_Ma..."): find the full English text
     // by its start and cut the Russian one to the same length; a leading marker (* ^ & #)
     // is kept as is
@@ -305,11 +319,50 @@
       var en = RU.rev.get(s);
       return en === undefined ? s : en;
     }
+    // ---- fonts without Cyrillic ---------------------------------------------------------
+    // Only some of the game's fonts get Cyrillic glyphs (fonts/). Russian text drawn in any
+    // other font would come out blank, so it is drawn in the Cyrillic font of the nearest size.
+    var Script = HX['com.stencyl.behavior.Script'];
+    var cyrFonts = null, subst = new Map();
+    function hasCyr(f) {
+      var g = f && f.font && f.font._glyphs;
+      return !!(g && g.h && g.h[1072] != null && g.h[1040] != null);   // 'а', 'А'
+    }
+    function height(f) {
+      try { return f.font.getFontHeight() * (f.fontScale || 1); } catch (e) { return 0; }
+    }
+    function substitute(f) {
+      if (!f || hasCyr(f)) return f;
+      if (subst.has(f)) return subst.get(f);
+      if (!cyrFonts) {
+        cyrFonts = [];
+        (DATA.fonts || []).forEach(function (id) {
+          try { var c = Script.getFont(id); if (hasCyr(c)) cyrFonts.push(c); } catch (e) {}
+        });
+      }
+      var h = height(f), best = null, bestD = Infinity;
+      cyrFonts.forEach(function (c) {
+        var d = Math.abs(height(c) - h);
+        if (d < bestD) { bestD = d; best = c; }
+      });
+      if (best) RU.logf('font ' + f.ID + ' has no Cyrillic, drawn with ' + best.ID);
+      subst.set(f, best || f);
+      return best || f;
+    }
+    RU.fontFor = substitute;
+
     var G = HX['com.stencyl.graphics.G'] || findProto('drawString', 'drawLine');
     if (G) {
       var drawString = G.prototype.drawString;
       G.prototype.drawString = function (text, x, y) {
         text = lastRU ? tr(text) : back(text);
+        if (lastRU && typeof text === 'string' && CYR.test(text) && this.font && Script) {
+          var f = this.font, s = substitute(f);
+          if (s !== f) {
+            this.font = s;
+            try { return drawString.call(this, text, x, y); } finally { this.font = f; }
+          }
+        }
         return drawString.call(this, text, x, y);
       };
     } else RU.logf('G.drawString not found');
@@ -318,6 +371,10 @@
       var width = Font.prototype.getTextWidth;
       Font.prototype.getTextWidth = function (text) {
         text = lastRU ? tr(text) : back(text);
+        if (lastRU && typeof text === 'string' && CYR.test(text) && Script) {
+          var s = substitute(this);
+          if (s !== this) return width.call(s, text);
+        }
         return width.call(this, text);
       };
     } else RU.logf('Font not found');
