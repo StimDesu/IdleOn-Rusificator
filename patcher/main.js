@@ -89,6 +89,10 @@ function comparedLiterals(njs) {
     /\.indexOf\("((?:[^"\\]|\\.)+)"\)/g,
     /case"((?:[^"\\]|\\.)+)":/g,
     /\.h\["((?:[^"\\]|\\.)+)"\]/g,
+    // ids the code produces itself and compares later, e.g. the player's class family
+    // ("ARCHER") checked against an item's Class
+    /[?:]"([A-Z][A-Z0-9_]{2,})"(?=[:;,)}])/g,
+    /return"([A-Z][A-Z0-9_]{2,})"/g,
   ];
   for (const re of res) {
     let m;

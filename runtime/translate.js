@@ -46,6 +46,17 @@
         if (x && typeof x === 'object') collectKeys(x, depth + 1);
       }
     }
+    // Item and monster definitions mix text with ids the code compares with its own values
+    // (an item's Class against "ARCHER" from the player's class, a monster's Type against a
+    // list it builds, its Name searched for "_Rune"). Only their text fields are translated
+    // in the data; the rest is translated where it is drawn.
+    var ITEM_TEXT = { displayName: 1, UQ1txt: 1, UQ2txt: 1 };
+    var MONSTER_TEXT = { Name: 1 };
+    function textFields(c) {
+      if ('typeGen' in c || 'lvReqToEquip' in c || 'desc_line1' in c) return ITEM_TEXT;
+      if ('MonsterFace' in c) return MONSTER_TEXT;
+      return null;
+    }
     function replaceIn(v, depth) {
       if (depth > 9) return;
       var c = children(v);
@@ -53,11 +64,14 @@
       var isArr = Array.isArray(c);
       var list = isArr ? null : Object.keys(c);
       var n = isArr ? c.length : list.length;
+      var only = isArr ? null : textFields(c);
       for (var i = 0; i < n; i++) {
         var k = isArr ? i : list[i];
         var x = c[k];
         if (typeof x === 'string') {
           if (!isArr && DESC_KEY.test(k)) continue;   // whole descriptions only, see applyItems
+          if (only && !only[k]) continue;
+          if (only === MONSTER_TEXT && x.indexOf('_Rune') !== -1) continue;
           var ru = dict.get(x);
           if (ru !== undefined && ru !== x && !protectedStr.has(x) && !keys.has(x)) {
             c[k] = ru;
