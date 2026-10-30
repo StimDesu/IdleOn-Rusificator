@@ -5,3 +5,4 @@ __pycache__/
 *.asar
 fonts/report.json
 patcher/last-run.log
+fishing_overlay/overlay_state.json
