@@ -47,4 +47,10 @@ module.exports = [
     replace: (m, k, plus) => '.indexOf(globalThis.__ruKW?__ruKW("' + k + ':"):"' + k + ':")' +
       (plus ? '+(globalThis.__ruKW?__ruKW("' + k + ':").length-1:' + plus.slice(1) + ')' : ''),
   },
+  {
+    // sailing island board: the name is an adjective in Russian (runtime/translate.js)
+    name: 'island names',
+    find: /(this\._DT1=)(""\+\w+\.string\(this\._GenINFO\[8\]\[0\|this\._DRI\]\))/,
+    replace: (m, a, b) => a + '(globalThis.__ruIsle?__ruIsle(' + b + '):' + b + ')',
+  },
 ];

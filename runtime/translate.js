@@ -392,5 +392,20 @@
         return width.call(this, text);
       };
     } else RU.logf('Font not found');
+    // long texts are cut into lines (customBlock_linesofText) before they are drawn, so the
+    // drawing layer only ever sees pieces: translate the whole text before it is cut
+    var Lines = null;
+    for (var hk in HX) if (HX[hk] && typeof HX[hk]._customBlock_linesofText === 'function') { Lines = HX[hk]; break; }
+    if (Lines) {
+      var linesOf = Lines._customBlock_linesofText;
+      Lines._customBlock_linesofText = function (text, opts) {
+        if (typeof text === 'string') text = lastRU ? tr(text) : back(text);
+        return linesOf.call(this, text, opts);
+      };
+    } else RU.logf('linesofText not found');
+    // island names on the sailing board (line one of "TRASH / ISLAND"): an adjective in
+    // Russian, so not the dictionary's noun; called from the patched drawing code
+    var ISLES = { TRASH: 'МУСОРНЫЙ', RANDO: 'СЛУЧАЙНЫЙ', CRYSTAL: 'КРИСТАЛЬНЫЙ', SEASALT: 'СОЛЁНЫЙ', SHIMMER: 'МЕРЦАЮЩИЙ', FRACTAL: 'ФРАКТАЛЬНЫЙ' };
+    g.__ruIsle = function (s) { return lastRU && ISLES[s] || s; };
   });
 })(globalThis);
