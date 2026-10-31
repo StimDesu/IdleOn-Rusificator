@@ -726,6 +726,120 @@ def build_button(name, sp, src, img, out_dir, save=True):
         img.save(os.path.join(out_dir, name))
 
 
+def flat_fill(img, rect, limit=110):
+    """paint a rectangle of a flat panel with each row's own panel colour; rows the lettering
+    covers more than half of take the colour of the nearest clean row"""
+    x0, y0, x1, y1 = rect
+    px = img.load()
+    # the panel's own colour: rows are clean only when their colour is near it (not an outline)
+    allc = Counter(px[x, y] for y in range(y0, y1) for x in range(x0, x1)
+                   if px[x, y][3] > 100 and 12 < lum(px[x, y]) < limit)
+    panel = allc.most_common(1)[0][0] if allc else None
+    modes = {}
+    for y in range(y0, y1):
+        # the panel is dark (often semi-transparent), the lettering light with a dark outline
+        body = Counter(px[x, y] for x in range(x0, x1) if px[x, y][3] > 100 and 12 < lum(px[x, y]) < limit)
+        if body:
+            m = body.most_common(1)[0][0]
+            n = sum(k for c, k in body.items() if near(c, m, 24))   # noisy panels
+            if n >= (x1 - x0) / 2 and (panel is None or near(m, panel, 60)):
+                modes[y] = m
+    if not modes:
+        modes = {y0: panel} if panel else {}
+    if not modes:
+        return
+    for y in range(y0, y1):
+        m = modes[min(modes, key=lambda r: abs(r - y))]
+        for x in range(x0, x1):
+            px[x, y] = m
+
+
+def drop_outline(t):
+    """the font's dark outline off: panel captions are plain letters"""
+    px = t.load()
+    cols = [px[x, y] for y in range(t.height) for x in range(t.width) if px[x, y][3]]
+    if not cols:
+        return t
+    lo = min(lum(c) for c in cols)
+    for y in range(t.height):
+        for x in range(t.width):
+            if px[x, y][3] and lum(px[x, y]) < lo + 40:
+                px[x, y] = (0, 0, 0, 0)
+    return t
+
+
+def build_panel(name, sp, src, img, out_dir):
+    """plain text on a flat panel: rows refilled with the panel colour, game font in the old colours"""
+    base = {k: v for k, v in sp.items() if k != 'parts'}
+    parts = [dict(base, **p) for p in sp.get('parts', [{}])]
+    for p in parts:   # erase everything first: parts may share rows
+        for r in p.get('clear', [p['box']]):
+            if p.get('erase') == 'clear':   # text on transparent ground
+                erase(img, r, 'clear')
+            else:
+                flat_fill(img, r, p.get('limit', 110))
+    for p in parts:
+        x0, y0, x1, y1 = p['box']
+        lines = p['text'].split('|')
+        allf = row_fills(src, p.get('cbox', p['box'])) if not p.get('fill') else [hexcol(p['fill'])]
+        if p.get('fill'):
+            fills = allf
+        else:
+            # one line of the original: the rows of its first lettering band
+            per = max(1, len(allf) // p.get('orig_lines', len(lines)))
+            fills = allf[:per]
+        mixed = any(ch.islower() for ch in p['text'])
+        tries = ([(f, s) for f in p['fonts'] for s in (0, -1)] if 'fonts' in p else
+                 [(p['font'], p.get('spacing', 0))] if 'font' in p else
+                 [(472, 0), (472, -1), (109, 0), (109, -1), (75, 0), (75, -1)] if mixed else
+                 [(309, 0), (309, -1), (309, -2), (109, 0), (109, -1), (75, -1)])
+        maxw = p.get('maxw', x1 - x0)
+        for fid, spacing in tries:
+            font = FONT_CACHE.get(fid) or FONT_CACHE.setdefault(fid, Font(fid))
+            rendered = [font.render(ln, spacing) for ln in lines]
+            if p.get('px', 1) > 1:   # chunky captions: a small font doubled, outline and all
+                k = p['px']
+                rendered = [t.resize((t.width * k, t.height * k), Image.NEAREST) for t in rendered]
+            if max(t.width for t in rendered) <= maxw + 2:
+                break
+        for t in rendered:
+            if t.width > maxw + 2:
+                print(f'  {name}: "{lines}" is {t.width}px wide, box {maxw}px')
+        outl = (None if p.get('outline') == 'none' else text_colors(src, p['box'])[1] if p.get('outline') == 'auto'
+                else hexcol(p.get('outline', '#000000')))
+        out = []
+        for t in rendered:
+            t = recolor(t, (255, 255, 255, 255), outl or (0, 0, 0, 255))
+            if not outl:
+                t = drop_outline(t)
+                bb = t.getbbox()
+                t = t.crop(bb) if bb else t
+            out.append(regrade(t, fills, outl or (0, 0, 0, 255)) if len(fills) > 1 else
+                       recolor(t, fills[0], outl or fills[0]) if outl else tint_all(t, fills[0]))
+        gap = p.get('gap', 2)
+        th = sum(t.height for t in out) + gap * (len(out) - 1)
+        y = int(round((y0 + y1) / 2 - th / 2)) + p.get('dy', 0)
+        for t in out:
+            if p.get('align') == 'left':
+                x = x0 + p.get('dx', 0)
+            elif p.get('align') == 'right':   # a number is drawn after it by the game
+                x = x1 - t.width + p.get('dx', 0)
+            else:
+                x = (x0 + x1 - t.width) // 2 + p.get('dx', 0)
+            img.alpha_composite(t, (max(0, x), max(0, y)))
+            y += t.height + gap
+    img.save(os.path.join(out_dir, name))
+
+
+def tint_all(t, fill):
+    px = t.load()
+    for y in range(t.height):
+        for x in range(t.width):
+            if px[x, y][3]:
+                px[x, y] = tuple(fill[:3]) + (px[x, y][3],)
+    return t
+
+
 BIG_FONTS = [(259, 0), (259, -1), (322, 0), (322, -1), (309, 0), (309, -1), (309, -2)]
 AUTO_FONTS = [(309, 0), (309, -1), (309, -2), (109, 0), (109, -1), (75, -1)]
 FONT_CACHE = {}
@@ -746,6 +860,8 @@ def build_one(name, sp, out_dir):
             SOFT[0] = q.get('white') == 'soft'
             build_button(name, q, src, img, out_dir, save=False)
         return img.save(os.path.join(out_dir, name))
+    if sp.get('mode') == 'panel':
+        return build_panel(name, sp, src, img, out_dir)
     if 'ttf' in sp or 'gfont' in sp:
         return build_ttf(name, sp, src, img, out_dir)
     box = sp.get('box') or 'auto'

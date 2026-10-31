@@ -1,0 +1,21 @@
+{
+ "_": "plain multi-line text on flat panels: rows refilled with the panel colour, game font in the old colours",
+ "_defaults": {"mode": "panel"},
+ "Popup29.png": {"text": "НУЖНО ХОТЯ БЫ|100 СТРАНИЦ,|ЧТОБЫ УЧИТЬ", "box": [3, 2, 136, 49], "clear": [[3, 2, 148, 15], [3, 15, 136, 49]], "orig_lines": 3},
+ "Popup30.png": {"parts": [{"text": "ТЫ ПРОЧИТАЛ ВСЁ,", "box": [4, 2, 176, 18], "clear": [[6, 2, 176, 18]]}, {"text": "ЧТО МОЖНО...|ЖДИ ЗАВТРА", "box": [50, 18, 176, 48], "cbox": [50, 33, 176, 48]}]},
+ "Popup19.png": {"text": "НЕТ СВОБОДНЫХ|МЕСТ КАПИТАНА", "box": [3, 8, 120, 48], "orig_lines": 2},
+ "PopupNum21.png": {"text": "ПРЕДМЕТ|В ХРАНИЛИЩЕ", "box": [2, 7, 118, 41], "orig_lines": 2},
+ "Popup33.png": {"text": "Нужна хотя бы половина|макс. выносливости,|чтобы собрать отряд!", "box": [4, 4, 157, 53], "orig_lines": 3},
+ "Popup26.png": {"parts": [{"text": "СТАРАЯ ВЕРСИЯ", "box": [26, 5, 162, 21]}, {"text": "Пока нет обновления", "box": [26, 21, 176, 33], "clear": [[26, 21, 176, 33]], "cbox": [3, 21, 176, 36]}, {"text": "для телефонов, играй|в Steam или браузере", "box": [3, 33, 176, 69], "clear": [[3, 33, 176, 69]], "orig_lines": 2}]},
+ "TwitchTap4.png": {"parts": [{"text": "Спасибо за просмотр!", "box": [38, 7, 174, 23], "clear": [[38, 7, 174, 26]]}, {"text": "Ты посмотрел недавний стрим,|заходи в следующий раз!", "box": [4, 35, 195, 65], "orig_lines": 2}]},
+ "FishTKlow.png": {"parts": [{"text": "Нужна эффективность", "box": [22, 2, 197, 17], "clear": [[22, 2, 197, 18]]}, {"text": "Твоя эффективность", "box": [4, 17, 140, 33], "clear": [[24, 18, 150, 35]], "align": "right"}]},
+ "PopupCr4.png": {"parts": [{"fonts": [259], "outline": "auto", "text": "СБОЙ|ЗАГРУЗКИ", "box": [4, 2, 108, 47], "orig_lines": 2}, {"text": "(Перезапусти игру)", "box": [2, 47, 158, 63]}]},
+ "PopupCr3.png": {"fonts": [259], "outline": "auto", "text": "ИДУТ|ТЕХРАБОТЫ", "box": [3, 2, 124, 48], "clear": [[3, 2, 126, 48]], "orig_lines": 2},
+ "PopupCr2.png": {"fonts": [259], "outline": "auto", "parts": [{"text": "ОБНОВИ ИГРУ", "box": [2, 2, 136, 24]}, {"text": "И ИГРАЙ!", "box": [2, 24, 102, 47]}]},
+ "Popup24.png": {"parts": [{"text": "Сначала выполни", "box": [2, 2, 125, 16]}, {"text": "квесты Лафу Ши", "box": [2, 16, 124, 30], "clear": [[44, 16, 125, 33]], "align": "right"}]},
+ "Popup13.png": {"erase": "clear", "parts": [{"text": "Сначала выполни", "box": [0, 0, 110, 11], "clear": [[0, 0, 110, 10]]}, {"text": "квесты Гобо", "box": [0, 11, 84, 26], "clear": [[0, 10, 84, 29]]}]},
+ "UIObolDust1.png": {"erase": "clear", "text": "ПЕРЕТАЩИ СЮДА|ОБОЛ, ЧТОБЫ|РАЗБИТЬ ЕГО", "box": [43, 3, 158, 44], "outline": "auto", "orig_lines": 3},
+ "EventBM.png": {"parts": [{"text": "Всё уже куплено?", "box": [10, 5, 176, 20], "fill": "#ffdd74"}, {"text": "ЧЁРНЫЙ РЫНОК", "box": [8, 20, 150, 37], "fonts": [259, 309], "outline": "auto"}]},
+ "TwitchTap.png": {"parts": [{"text": "Идёт стрим Lava!", "box": [36, 5, 172, 18]}, {"text": "Смотреть", "box": [54, 18, 170, 32], "align": "left"}]},
+ "TwitchTap3.png": {"parts": [{"text": "Спасибо за просмотр!", "box": [38, 7, 176, 25]}, {"text": "Забрать награду", "box": [22, 37, 174, 58], "limit": 250, "outline": "#000000", "fill": "#ffffff"}]}
+}
