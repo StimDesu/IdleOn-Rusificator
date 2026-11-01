@@ -904,13 +904,13 @@ def draw_runs(img, src, p):
                 if p.get('px', 1) > 1:
                     im = im.resize((im.width * p['px'], im.height * p['px']), Image.NEAREST)
                 im = two_tone(im, hexcol(r.get('fill', p.get('fill', '#ffffff'))), outl) if im.width else im
-                pieces.append((im, (lead, trail, r.get('uline'), hexcol(r.get('fill', p.get('fill', '#ffffff'))))))
+                pieces.append((im, (lead, trail, r.get('uline'), hexcol(r.get('fill', p.get('fill', '#ffffff'))), r.get('dx', 0))))
             boxes = [im.getbbox() for im, sp in pieces if sp != 'icon' and im.width and im.getbbox()]
             if boxes:   # one vertical crop for the whole line keeps the baseline
                 t0, t1 = min(b[1] for b in boxes), max(b[3] for b in boxes)
                 pieces = [(im.crop((0, t0, im.width, t1)) if sp != 'icon' and im.width else im, sp)
                           for im, sp in pieces]
-            w = sum(im.width + (space * (sp[0] + sp[1]) if sp != 'icon' else 1) for im, sp in pieces)
+            w = sum(im.width + (space * (sp[0] + sp[1]) + sp[4] if sp != 'icon' else 1) for im, sp in pieces)
             out.append((pieces, w))
         return out
 
@@ -931,7 +931,7 @@ def draw_runs(img, src, p):
                 img.alpha_composite(im, (x, y + (h - im.height) // 2))
                 x += im.width + 1
                 continue
-            x += space * sp[0]
+            x += space * sp[0] + sp[4]   # dx: a pixel or two of air before a piece
             if im.width:
                 img.alpha_composite(im, (x, y + (h - im.height) // 2))
                 if sp[2]:   # an underlined piece ("all the time"), in its own colour
