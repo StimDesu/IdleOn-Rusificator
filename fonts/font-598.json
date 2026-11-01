@@ -1,0 +1,180 @@
+{
+"chars": [
+{
+"id": 47128,
+"x": 0,
+"y": 0,
+"width": 114,
+"height": 84,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 114,
+"replace": true
+},
+{
+"id": 47131,
+"x": 116,
+"y": 0,
+"width": 114,
+"height": 84,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 114,
+"replace": true
+},
+{
+"id": 47144,
+"x": 232,
+"y": 0,
+"width": 114,
+"height": 84,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 114,
+"replace": true
+},
+{
+"id": 47156,
+"x": 348,
+"y": 0,
+"width": 114,
+"height": 84,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 114,
+"replace": true
+},
+{
+"id": 20828,
+"x": 0,
+"y": 86,
+"width": 182,
+"height": 54,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 182,
+"replace": true
+},
+{
+"id": 20844,
+"x": 184,
+"y": 86,
+"width": 184,
+"height": 54,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 184,
+"replace": true
+},
+{
+"id": 20852,
+"x": 0,
+"y": 142,
+"width": 287,
+"height": 54,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 287,
+"replace": true
+},
+{
+"id": 20849,
+"x": 0,
+"y": 198,
+"width": 324,
+"height": 54,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 324,
+"replace": true
+},
+{
+"id": 20826,
+"x": 0,
+"y": 254,
+"width": 195,
+"height": 45,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 195,
+"replace": true
+},
+{
+"id": 35440,
+"x": 197,
+"y": 254,
+"width": 153,
+"height": 20,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 153,
+"replace": true
+},
+{
+"id": 35441,
+"x": 352,
+"y": 254,
+"width": 153,
+"height": 20,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 153,
+"replace": true
+},
+{
+"id": 35443,
+"x": 0,
+"y": 301,
+"width": 153,
+"height": 20,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 153,
+"replace": true
+},
+{
+"id": 35342,
+"x": 155,
+"y": 301,
+"width": 114,
+"height": 20,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 114,
+"replace": true
+},
+{
+"id": 35370,
+"x": 271,
+"y": 301,
+"width": 114,
+"height": 20,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 114,
+"replace": true
+},
+{
+"id": 35377,
+"x": 387,
+"y": 301,
+"width": 114,
+"height": 20,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 114,
+"replace": true
+},
+{
+"id": 35430,
+"x": 0,
+"y": 323,
+"width": 114,
+"height": 20,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 114,
+"replace": true
+}
+]
+}

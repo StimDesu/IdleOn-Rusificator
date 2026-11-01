@@ -978,6 +978,7 @@ def build_panel(name, sp, src, img, out_dir):
         x0, y0, x1, y1 = p['box']
         lines = p['text'].split('|')
         allf = row_fills(src, p.get('cbox', p['box'])) if not p.get('fill') else [hexcol(p['fill'])]
+        allf = allf or [hexcol('#ffffff')]   # no lettering found to take colours from
         if p.get('fill'):
             fills = allf
         else:

@@ -1,0 +1,48 @@
+{
+"chars": [
+{
+"id": 50629,
+"x": 0,
+"y": 0,
+"width": 166,
+"height": 53,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 166,
+"replace": true
+},
+{
+"id": 32784,
+"x": 168,
+"y": 0,
+"width": 148,
+"height": 49,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 148,
+"replace": true
+},
+{
+"id": 32887,
+"x": 0,
+"y": 55,
+"width": 195,
+"height": 49,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 195,
+"replace": true
+},
+{
+"id": 32905,
+"x": 197,
+"y": 55,
+"width": 124,
+"height": 49,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 124,
+"replace": true
+}
+]
+}

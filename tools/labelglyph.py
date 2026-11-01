@@ -100,8 +100,10 @@ def simple(fid, ch, sp):
     h = sp.get('height', old.height)   # the glyph may grow downwards
     part = {'text': sp['text'], 'box': [x0, 0, x1 if 'x1' in sp else w, h], 'clear': [[x0, 0, x1, old.height]],
             'fonts': fonts, 'outline': 'auto', 'cbox': bx, 'align': sp.get('align', 'left' if x0 else 'center')}
-    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1', 'height', 'restore', 'stripes')})
-    img, g = panel(fid, ch, w, {'erase': sp.get('erase', 'clear'), 'parts': [part], 'restore': sp.get('restore', [])}, h)
+    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1', 'height', 'restore', 'stripes', 'more')})
+    more = [dict({'outline': 'auto', 'erase': sp.get('erase', 'clear')}, **m) for m in sp.get('more', [])]   # other captions
+    img, g = panel(fid, ch, w, {'erase': sp.get('erase', 'clear'), 'parts': [part] + more,
+                                'restore': sp.get('restore', [])}, h)
     if sp.get('stripes'):   # diagonal bands "\" over the fill colour: [colour, period, width]
         col, period, width = sp['stripes']
         fill, col = hexcol(sp['fill'])[:3], hexcol(col)
