@@ -53,4 +53,13 @@ module.exports = [
     find: /(this\._DT1=)(""\+\w+\.string\(this\._GenINFO\[8\]\[0\|this\._DRI\]\))/,
     replace: (m, a, b) => a + '(globalThis.__ruIsle?__ruIsle(' + b + '):' + b + ')',
   },
+  {
+    // locked prayer hint is glued from pieces around the (translated) totem name, then compared
+    // with an English sentence to spot prayers that cannot be unlocked: Russian word order,
+    // and the check goes by the wave number (999) instead; no «» quotes, font 472 has none
+    name: 'locked prayer hint',
+    find: /(this\._DummyText=)"Reach_Wave_"\+(\w+\.string\(this\._DummyList\[7\]\))\+"_at_the_"\+(.+?)\+"_Worship_Totem","Reach_Wave_999_at_the_Goblin_Gorefest_Worship_Totem"==this\._DummyText/,
+    replace: (m, a, wave, name) => a + '(globalThis.__ruL?"Дойди_до_"+' + wave + '+"-й_волны_у_тотема_"+' + name +
+      ':"Reach_Wave_"+' + wave + '+"_at_the_"+' + name + '+"_Worship_Totem"),999==Number(this._DummyList[7])',
+  },
 ];

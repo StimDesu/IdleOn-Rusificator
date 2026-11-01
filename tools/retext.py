@@ -47,6 +47,15 @@ class Font:
             for c in spec['chars']:
                 self.glyphs[chr(c['id'])] = (sh, c['x'], c['y'], c['width'], c['height'], c['xoffset'], c['yoffset'], c['xadvance'])
 
+        if '•' not in self.glyphs and '.' in self.glyphs and 'x' in self.glyphs:
+            # bullet: the full stop lifted to the middle of the small letters
+            def rows(g):   # opaque rows of a glyph cell
+                bb = g[0].crop((g[1], g[2], g[1] + g[3], g[2] + g[4])).getbbox()
+                return g[6] + bb[1], g[6] + bb[3]
+            d, x = self.glyphs['.'], self.glyphs['x']
+            (d0, d1), (x0, x1) = rows(d), rows(x)
+            self.glyphs['•'] = d[:6] + (d[6] + (x0 + x1) // 2 - (d0 + d1) // 2, d[7])
+
     def render(self, text, spacing=0):
         """text -> RGBA image cropped to its pixels"""
         w = sum(self.glyphs.get(ch, self.glyphs.get(' '))[7] + spacing for ch in text) + 40
@@ -119,6 +128,20 @@ def recolor(img, fill, outline):
                 continue
             t = 1.0 if hi == lo else (lum((r, g, b)) - lo) / (hi - lo)
             px[x, y] = tuple(int(outline[i] + (fill[i] - outline[i]) * t) for i in range(3)) + (a,)
+    return img
+
+
+def two_tone(img, fill, outline):
+    """crisp lettering: every pixel of the font becomes either the fill or the outline colour"""
+    px = img.load()
+    ls = [lum(px[x, y]) for x in range(img.width) for y in range(img.height) if px[x, y][3]]
+    if not ls:
+        return img
+    mid = (min(ls) + max(ls)) / 2
+    for y in range(img.height):
+        for x in range(img.width):
+            if px[x, y][3]:
+                px[x, y] = tuple((fill if lum(px[x, y]) > mid else outline)[:3]) + (255,)
     return img
 
 
@@ -754,6 +777,25 @@ def flat_fill(img, rect, limit=110):
             px[x, y] = m
 
 
+def text_fill(img, rect, limit=110):
+    """repaint only the lettering inside rect (light pixels and the dark outline touching
+    them) with each row's panel colour; whatever else is there stays"""
+    x0, y0, x1, y1 = rect
+    px = img.load()
+    light = {(x, y) for y in range(y0, y1) for x in range(x0, x1)
+             if px[x, y][3] > 100 and lum(px[x, y]) > 140 and max(px[x, y][:3]) - min(px[x, y][:3]) < 60}
+    dark = {(x + dx, y + dy) for x, y in light for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+            if x0 <= x + dx < x1 and y0 <= y + dy < y1 and lum(px[x + dx, y + dy]) < 60}
+    for y in range(y0, y1):
+        row = Counter(px[x, y] for x in range(x0, x1) if 12 < lum(px[x, y]) < limit)
+        if not row:
+            continue
+        m = row.most_common(1)[0][0]
+        for x in range(x0, x1):
+            if (x, y) in light or (x, y) in dark:
+                px[x, y] = m
+
+
 def drop_outline(t):
     """the font's dark outline off: panel captions are plain letters"""
     px = t.load()
@@ -776,6 +818,8 @@ def build_panel(name, sp, src, img, out_dir):
         for r in p.get('clear', [p['box']]):
             if p.get('erase') == 'clear':   # text on transparent ground
                 erase(img, r, 'clear')
+            elif p.get('erase') == 'text':   # sprites over the text: only its own pixels go
+                text_fill(img, r, p.get('limit', 110))
             else:
                 flat_fill(img, r, p.get('limit', 110))
     for p in parts:
@@ -809,6 +853,9 @@ def build_panel(name, sp, src, img, out_dir):
                 else hexcol(p.get('outline', '#000000')))
         out = []
         for t in rendered:
+            if p.get('flat'):   # one fill colour, one outline colour, no shading
+                out.append(two_tone(t, fills[0], outl or (0, 0, 0, 255)))
+                continue
             t = recolor(t, (255, 255, 255, 255), outl or (0, 0, 0, 255))
             if not outl:
                 t = drop_outline(t)
@@ -827,6 +874,10 @@ def build_panel(name, sp, src, img, out_dir):
             else:
                 x = (x0 + x1 - t.width) // 2 + p.get('dx', 0)
             img.alpha_composite(t, (max(0, x), max(0, y)))
+            if p.get('uline'):   # underlined link-like words ("world 3")
+                bb = t.getbbox()
+                for ux in range(max(0, x + bb[0]), x + bb[2]):
+                    img.putpixel((ux, y + bb[3] + p['uline'] - 1), tuple(fills[0][:3]) + (255,))
             y += t.height + gap
     img.save(os.path.join(out_dir, name))
 
