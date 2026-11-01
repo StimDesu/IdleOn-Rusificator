@@ -56,8 +56,9 @@ class Font:
             (d0, d1), (x0, x1) = rows(d), rows(x)
             self.glyphs['•'] = d[:6] + (d[6] + (x0 + x1) // 2 - (d0 + d1) // 2, d[7])
 
-    def render(self, text, spacing=0):
-        """text -> RGBA image cropped to its pixels"""
+    def render(self, text, spacing=0, crop_y=True):
+        """text -> RGBA image cropped to its pixels (only sideways with crop_y=False, so
+        pieces of one line share the baseline)"""
         w = sum(self.glyphs.get(ch, self.glyphs.get(' '))[7] + spacing for ch in text) + 40
         h = max([g[4] + max(0, g[6]) for g in self.glyphs.values()] + [self.line]) + 20
         img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
@@ -72,6 +73,8 @@ class Font:
                 img.alpha_composite(piece, (x + xo, 10 + yo))
             x += adv + spacing + (3 if ch == ' ' and spacing < 0 else 0)
         bb = img.getbbox()
+        if bb and not crop_y:
+            return img.crop((bb[0], 0, bb[2], img.height))
         return img.crop(bb) if bb else img
 
 
@@ -106,7 +109,7 @@ def big_letters(font, text, spacing, scale, fill, outline):
 
 def hexcol(s):
     s = s.lstrip('#')
-    return tuple(int(s[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
+    return tuple(int(s[i:i + 2], 16) for i in (0, 2, 4)) + (int(s[6:8], 16) if len(s) == 8 else 255,)
 
 
 def lum(c):
@@ -806,14 +809,18 @@ def flat_fill(img, rect, limit=110, lo=12):
             px[x, y] = m
 
 
-def text_fill(img, rect, limit=110, anysat=False, dark_lum=60):
+def text_fill(img, rect, limit=110, anysat=False, dark_lum=60, ranges=None, dark_r=1):
     """repaint only the lettering inside rect (light pixels and the dark outline touching
     them) with each row's panel colour; whatever else is there stays"""
     x0, y0, x1, y1 = rect
     px = img.load()
-    light = {(x, y) for y in range(y0, y1) for x in range(x0, x1)
-             if px[x, y][3] > 100 and lum(px[x, y]) > 140 and (anysat or max(px[x, y][:3]) - min(px[x, y][:3]) < 60)}
-    dark = {(x + dx, y + dy) for x, y in light for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+    if ranges:   # the lettering's colours given as [r0, r1, g0, g1, b0, b1] boxes (text over sprites)
+        light = {(x, y) for y in range(y0, y1) for x in range(x0, x1)
+                 if any(all(q[2 * i] <= px[x, y][i] <= q[2 * i + 1] for i in range(3)) for q in ranges)}
+    else:
+        light = {(x, y) for y in range(y0, y1) for x in range(x0, x1)
+                 if px[x, y][3] > 100 and lum(px[x, y]) > 140 and (anysat or max(px[x, y][:3]) - min(px[x, y][:3]) < 60)}
+    dark = {(x + dx, y + dy) for x, y in light for dx in range(-dark_r, dark_r + 1) for dy in range(-dark_r, dark_r + 1)
             if x0 <= x + dx < x1 and y0 <= y + dy < y1 and lum(px[x + dx, y + dy]) < dark_lum}
     for y in range(y0, y1):
         row = Counter(px[x, y] for x in range(x0, x1) if lum(px[x, y]) < limit and (x, y) not in dark)
@@ -839,19 +846,88 @@ def drop_outline(t):
     return t
 
 
+def draw_runs(img, src, p):
+    """lines made of differently coloured pieces and icons cut from the original:
+    "runs": [[{"t": "text", "fill": "#rrggbb"}, {"icon": [x0, y0, x1, y1]}, ...], ...]"""
+    x0, y0, x1, y1 = p['box']
+    outl = hexcol(p.get('outline', '#000000'))
+    space = None
+
+    def build(fid, spacing):
+        nonlocal space
+        font = FONT_CACHE.get(fid) or FONT_CACHE.setdefault(fid, Font(fid))
+        space = font.glyphs[' '][7] + spacing
+        out = []
+        for line in p['runs']:
+            pieces = []
+            for r in line:
+                if 'icon' in r:
+                    pieces.append((src.crop(tuple(r['icon'])), 'icon'))
+                    continue
+                t = r['t']
+                lead, trail = len(t) - len(t.lstrip(' ')), len(t) - len(t.rstrip(' '))
+                im = font.render(t.strip(' '), spacing, crop_y=False) if t.strip(' ') else Image.new('RGBA', (0, 1))
+                if p.get('px', 1) > 1:
+                    im = im.resize((im.width * p['px'], im.height * p['px']), Image.NEAREST)
+                im = two_tone(im, hexcol(r.get('fill', p.get('fill', '#ffffff'))), outl) if im.width else im
+                pieces.append((im, (lead, trail)))
+            boxes = [im.getbbox() for im, sp in pieces if sp != 'icon' and im.width and im.getbbox()]
+            if boxes:   # one vertical crop for the whole line keeps the baseline
+                t0, t1 = min(b[1] for b in boxes), max(b[3] for b in boxes)
+                pieces = [(im.crop((0, t0, im.width, t1)) if sp != 'icon' and im.width else im, sp)
+                          for im, sp in pieces]
+            w = sum(im.width + (space * (sp[0] + sp[1]) if sp != 'icon' else 1) for im, sp in pieces)
+            out.append((pieces, w))
+        return out
+
+    tries = [(f, s) for f in p.get('fonts', [475]) for s in (0, -1)]
+    for fid, spacing in tries:
+        lines = build(fid, spacing)
+        if max(w for _, w in lines) <= x1 - x0 + 2:
+            break
+    lh = [max(im.height for im, _ in pieces) for pieces, _ in lines]
+    gap = p.get('gap', 2)
+    y = int(round((y0 + y1) / 2 - (sum(lh) + gap * (len(lh) - 1)) / 2)) + p.get('dy', 0)
+    for (pieces, w), h in zip(lines, lh):
+        x = x0 if p.get('align') == 'left' else (x0 + x1 - w) // 2
+        for im, sp in pieces:
+            if sp == 'icon':
+                img.alpha_composite(im, (x, y + (h - im.height) // 2))
+                x += im.width + 1
+                continue
+            x += space * sp[0]
+            if im.width:
+                img.alpha_composite(im, (x, y + (h - im.height) // 2))
+            x += im.width + space * sp[1]
+        y += h + gap
+
+
 def build_panel(name, sp, src, img, out_dir):
     """plain text on a flat panel: rows refilled with the panel colour, game font in the old colours"""
     base = {k: v for k, v in sp.items() if k != 'parts'}
     parts = [dict(base, **p) for p in sp.get('parts', [{}])]
     for p in parts:   # erase everything first: parts may share rows
         for r in p.get('clear', [p['box']]):
-            if p.get('erase') == 'clear':   # text on transparent ground
+            mode = r[4] if len(r) > 4 else p.get('erase')   # a rect may name its own erase mode
+            r5, r = r, r[:4]
+            if p.get('bg'):   # plain ground of one known colour
+                px = img.load()
+                for yy in range(r[1], r[3]):
+                    for xx in range(r[0], r[2]):
+                        px[xx, yy] = hexcol(p['bg'])
+            elif mode == 'flat':
+                flat_fill(img, r, p.get('limit', 110), p.get('lo', 12))
+            elif mode == 'clear':   # text on transparent ground
                 erase(img, r, 'clear')
-            elif p.get('erase') == 'text':   # sprites over the text: only its own pixels go
-                text_fill(img, r, p.get('limit', 110), p.get('anysat', False), p.get('dark_lum', 60))
+            elif mode == 'text':   # sprites over the text: only its own pixels go
+                text_fill(img, r, p.get('limit', 110), p.get('anysat', False), p.get('dark_lum', 60),
+                          r5[5] if len(r5) > 5 else None, p.get('dark_r', 1))
             else:
                 flat_fill(img, r, p.get('limit', 110), p.get('lo', 12))
     for p in parts:
+        if 'runs' in p:
+            draw_runs(img, src, p)
+            continue
         x0, y0, x1, y1 = p['box']
         lines = p['text'].split('|')
         allf = row_fills(src, p.get('cbox', p['box'])) if not p.get('fill') else [hexcol(p['fill'])]
