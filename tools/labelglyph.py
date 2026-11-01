@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import tempfile
 
 from retext import Font, ROOT, GAME, lum, build_panel   # noqa: E402
+from modredo import detect_font   # noqa: E402
 
 # (font id, glyph, text, text font, dash length each side or 0)
 LABELS = [
@@ -85,11 +86,33 @@ def panel(fid, ch, width, sp):
     return out, g
 
 
+def simple(fid, ch, sp):
+    """retext/glyphs.json entry: the English lettering right of x0 (an icon left of it stays)
+    is erased and the Russian text drawn in the font that drew it, in its colours"""
+    old, g = orig_glyph(fid, ch)
+    x0, x1 = sp.get('x0', 0), sp.get('x1', old.width)
+    px = old.load()
+    pts = [(x, y) for y in range(old.height) for x in range(x0, x1) if px[x, y][3] > 100]
+    bx = [min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts) + 1, max(p[1] for p in pts) + 1]
+    fonts = sp.get('fonts') or [int(f) for f in detect_font(old, bx)[:1]] or [475]
+    w = max(old.width, x0 + Font(str(fonts[0])).render(sp['text'].split('|')[0]).width + 2)
+    part = {'text': sp['text'], 'box': [x0, 0, x1 if 'x1' in sp else w, old.height], 'clear': [[x0, 0, x1, old.height]],
+            'fonts': fonts, 'outline': 'auto', 'cbox': bx, 'align': sp.get('align', 'left' if x0 else 'center')}
+    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1')})
+    return panel(fid, ch, w, {'erase': sp.get('erase', 'clear'), 'parts': [part]})
+
+
 def main():
     jobs = [(fid, ch, lambda a=a: label(*a)) for a in LABELS for fid, ch in [a[:2]]]
     jobs += [(fid, ch, lambda a=a: panel(*a)) for a in PANELS for fid, ch in [a[:2]]]
+    for key, sp in json.load(open(os.path.join(ROOT, 'retext', 'glyphs.json'), encoding='utf-8')).items():
+        if not key.startswith('_'):
+            fid, cid = map(int, key.split(':'))
+            jobs.append((fid, chr(cid), lambda f=fid, c=chr(cid), s=sp: simple(f, c, s)))
+    byfont = {}
     for fid, ch, make in jobs:
-        img, g = make()
+        byfont.setdefault(fid, []).append((ch, make))
+    for fid, items in byfont.items():
         jp = os.path.join(ROOT, 'fonts', f'font-{fid}.json')
         pp = os.path.join(ROOT, 'fonts', f'font-{fid}.png')
         if os.path.exists(jp):
@@ -97,17 +120,28 @@ def main():
             sheet = Image.open(pp).convert('RGBA')
         else:   # a font without Cyrillic of its own
             spec, sheet = {'chars': []}, Image.new('RGBA', (1, 1), (0, 0, 0, 0))
-        spec['chars'] = [c for c in spec['chars'] if c['id'] != ord(ch)]
+        ours = {ord(ch) for ch, _ in items}
+        spec['chars'] = [c for c in spec['chars'] if c['id'] not in ours]
         h = max([c['y'] + c['height'] for c in spec['chars']] or [-2])
-        new = Image.new('RGBA', (max(sheet.width, img.width), h + 2 + img.height), (0, 0, 0, 0))
+        made = [(ch, *make()) for ch, make in items]
+        # shelf packing below the other glyphs, rows no wider than the sheet (or 512)
+        W = max([sheet.width if h > 0 else 0, 512] + [img.width for _, img, _ in made])
+        x, y, rh, pos = 0, h + 2, 0, []
+        for ch, img, g in sorted(made, key=lambda m: -m[1].height):
+            if x + img.width > W:
+                x, y, rh = 0, y + rh + 2, 0
+            pos.append((ch, img, g, x, y))
+            x, rh = x + img.width + 2, max(rh, img.height)
+        new = Image.new('RGBA', (W, y + rh), (0, 0, 0, 0))
         if h > 0:
             new.paste(sheet.crop((0, 0, sheet.width, h)), (0, 0))
-        new.paste(img, (0, h + 2))
-        spec['chars'].append({'id': ord(ch), 'x': 0, 'y': h + 2, 'width': img.width, 'height': img.height,
-                              'xoffset': 0, 'yoffset': g.get('yoffset', 0), 'xadvance': img.width, 'replace': True})
+        for ch, img, g, gx, gy in pos:
+            new.paste(img, (gx, gy))
+            spec['chars'].append({'id': ord(ch), 'x': gx, 'y': gy, 'width': img.width, 'height': img.height,
+                                  'xoffset': 0, 'yoffset': g.get('yoffset', 0), 'xadvance': img.width, 'replace': True})
         new.save(pp)
         open(jp, 'w', encoding='utf-8', newline='\n').write(json.dumps(spec, ensure_ascii=False, indent=0) + '\n')
-        print(f'font {fid} U+{ord(ch):04X}: {img.width}x{img.height}')
+        print(f'font {fid}: {len(made)} glyphs, sheet {new.width}x{new.height}')
 
 
 if __name__ == '__main__':

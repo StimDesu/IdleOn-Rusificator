@@ -691,6 +691,39 @@
 "xoffset": 1,
 "yoffset": 3,
 "xadvance": 7
+},
+{
+"id": 34321,
+"x": 0,
+"y": 34,
+"width": 96,
+"height": 16,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 96,
+"replace": true
+},
+{
+"id": 34223,
+"x": 98,
+"y": 34,
+"width": 66,
+"height": 16,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 66,
+"replace": true
+},
+{
+"id": 34255,
+"x": 166,
+"y": 34,
+"width": 56,
+"height": 16,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 56,
+"replace": true
 }
 ]
 }

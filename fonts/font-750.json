@@ -1,25 +1,25 @@
 {
 "chars": [
 {
-"id": 39178,
+"id": 36190,
 "x": 0,
+"y": 0,
+"width": 224,
+"height": 55,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 224,
+"replace": true
+},
+{
+"id": 39178,
+"x": 226,
 "y": 0,
 "width": 155,
 "height": 53,
 "xoffset": 0,
 "yoffset": 0,
 "xadvance": 155,
-"replace": true
-},
-{
-"id": 36190,
-"x": 0,
-"y": 55,
-"width": 224,
-"height": 55,
-"xoffset": 0,
-"yoffset": 0,
-"xadvance": 224,
 "replace": true
 }
 ]

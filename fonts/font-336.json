@@ -1,0 +1,37 @@
+{
+"chars": [
+{
+"id": 31957,
+"x": 0,
+"y": 0,
+"width": 282,
+"height": 23,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 282,
+"replace": true
+},
+{
+"id": 35226,
+"x": 284,
+"y": 0,
+"width": 49,
+"height": 22,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 49,
+"replace": true
+},
+{
+"id": 36843,
+"x": 335,
+"y": 0,
+"width": 40,
+"height": 22,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 40,
+"replace": true
+}
+]
+}

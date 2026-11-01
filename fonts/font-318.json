@@ -1,0 +1,70 @@
+{
+"chars": [
+{
+"id": 27915,
+"x": 0,
+"y": 0,
+"width": 249,
+"height": 61,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 249,
+"replace": true
+},
+{
+"id": 27934,
+"x": 251,
+"y": 0,
+"width": 216,
+"height": 61,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 216,
+"replace": true
+},
+{
+"id": 32930,
+"x": 0,
+"y": 63,
+"width": 136,
+"height": 46,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 136,
+"replace": true
+},
+{
+"id": 32933,
+"x": 138,
+"y": 63,
+"width": 140,
+"height": 46,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 140,
+"replace": true
+},
+{
+"id": 49468,
+"x": 280,
+"y": 63,
+"width": 137,
+"height": 31,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 137,
+"replace": true
+},
+{
+"id": 49472,
+"x": 0,
+"y": 111,
+"width": 110,
+"height": 27,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 110,
+"replace": true
+}
+]
+}
