@@ -137,12 +137,41 @@ def two_tone(img, fill, outline):
     ls = [lum(px[x, y]) for x in range(img.width) for y in range(img.height) if px[x, y][3]]
     if not ls:
         return img
+    if max(ls) - min(ls) < 40:   # a font without outline: letters + a shadow right and down
+        out = Image.new('RGBA', (img.width + 1, img.height + 1), (0, 0, 0, 0))
+        q = out.load()
+        on = {(x, y) for x in range(img.width) for y in range(img.height) if px[x, y][3]}
+        for x, y in on:
+            for d in ((1, 0), (0, 1), (1, 1)):
+                if (x + d[0], y + d[1]) not in on:
+                    q[x + d[0], y + d[1]] = tuple(outline[:3]) + (255,)
+        for x, y in on:
+            q[x, y] = tuple(fill[:3]) + (255,)
+        return out
     mid = (min(ls) + max(ls)) / 2
     for y in range(img.height):
         for x in range(img.width):
             if px[x, y][3]:
                 px[x, y] = tuple((fill if lum(px[x, y]) > mid else outline)[:3]) + (255,)
     return img
+
+
+def add_ring(img, colors):
+    """one more outline ring around the lettering, its colour going down the rows
+    through colors (the orange rim of decorated titles)"""
+    out = Image.new('RGBA', (img.width + 2, img.height + 2), (0, 0, 0, 0))
+    out.alpha_composite(img, (1, 1))
+    src, q = out.copy().load(), out.load()
+    for y in range(out.height):
+        c = colors[min(len(colors) - 1, y * len(colors) // out.height)]
+        c = c if isinstance(c, tuple) else tuple(c)
+        for x in range(out.width):
+            if src[x, y][3]:
+                continue
+            if any(0 <= x + dx < out.width and 0 <= y + dy < out.height and src[x + dx, y + dy][3]
+                   for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                q[x, y] = tuple(c[:3]) + (255,)
+    return out
 
 
 def shadow_color(img, box):
@@ -833,7 +862,7 @@ def build_panel(name, sp, src, img, out_dir):
             per = max(1, len(allf) // p.get('orig_lines', len(lines)))
             fills = allf[:per]
         mixed = any(ch.islower() for ch in p['text'])
-        tries = ([(f, s) for f in p['fonts'] for s in (0, -1)] if 'fonts' in p else
+        tries = ([(f, s + p.get('spacing', 0)) for f in p['fonts'] for s in (0, -1)] if 'fonts' in p else
                  [(p['font'], p.get('spacing', 0))] if 'font' in p else
                  [(472, 0), (472, -1), (109, 0), (109, -1), (75, 0), (75, -1)] if mixed else
                  [(309, 0), (309, -1), (309, -2), (109, 0), (109, -1), (75, -1)])
@@ -853,8 +882,15 @@ def build_panel(name, sp, src, img, out_dir):
                 else hexcol(p.get('outline', '#000000')))
         out = []
         for t in rendered:
+            if p.get('native'):   # the font's own colours (decorated caption fonts)
+                out.append(t)
+                continue
             if p.get('flat'):   # one fill colour, one outline colour, no shading
-                out.append(two_tone(t, fills[0], outl or (0, 0, 0, 255)))
+                if p.get('solid'):   # outline-less font: the whole glyph is the fill, outline around
+                    t = add_ring(tint_all(t, fills[0]), [outl or (0, 0, 0, 255)])
+                else:
+                    t = two_tone(t, fills[0], outl or (0, 0, 0, 255))
+                out.append(add_ring(t, [hexcol(c) for c in p['ring']]) if p.get('ring') else t)
                 continue
             t = recolor(t, (255, 255, 255, 255), outl or (0, 0, 0, 255))
             if not outl:
