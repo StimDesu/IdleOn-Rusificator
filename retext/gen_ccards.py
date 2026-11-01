@@ -96,7 +96,7 @@ def card(name, title, labels, icon, line1, more, world, sprites):
             dict(body, text=b, box=[x + wa + 4, 267, x + wa + 4 + wb, 279], align='left', fill=col, uline=1),
             dict(body, text=c, box=[x + wa + wb + 6, 267, x + wa + wb + 6 + wc, 279], align='left', fill=fill),
         ]
-    return {'parts': parts}
+    return {'parts': parts, 'restore': [[96, 259, 134, 268]]} if world else {'parts': parts}
 
 
 def stats(name):

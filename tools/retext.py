@@ -846,6 +846,40 @@ def drop_outline(t):
     return t
 
 
+def erase_known(img, t, fid, region, limit=110, at=None):
+    """erase exactly the pixels of English text t drawn in font fid somewhere inside region:
+    the rendered line (letters + the font's own outline) is matched by its light pixels,
+    then every pixel it covers takes its row's panel colour"""
+    font = FONT_CACHE.get(fid) or FONT_CACHE.setdefault(fid, Font(fid))
+    r = font.render(t)
+    rp = r.load()
+    mask = [(x, y) for x in range(r.width) for y in range(r.height) if rp[x, y][3]]
+    light = [(x, y) for x, y in mask if lum(rp[x, y]) > 140]
+    px = img.load()
+    x0, y0, x1, y1 = region
+    best = (0, at[0], at[1]) if at else None
+    for oy in ([] if at else range(y0, y1 - r.height + 1)):
+        for ox in range(x0, x1 - r.width + 1):
+            n = sum(1 for x, y in light if lum(px[ox + x, oy + y]) > 140)
+            if best is None or n > best[0]:
+                best = (n, ox, oy)
+    if not best:
+        return
+    _, ox, oy = best
+    cover = {(ox + x, oy + y) for x, y in mask}
+    # the game may add its own dark rim around the line: dark pixels touching it go too
+    for _ in range(2):
+        cover |= {(x + dx, y + dy) for x, y in cover for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                  if 0 <= x + dx < img.width and 0 <= y + dy < img.height and lum(px[x + dx, y + dy]) < 45}
+    for y in sorted({y for _, y in cover}):
+        row = Counter(px[x, y] for x in range(x0, x1) if (x, y) not in cover and 12 < lum(px[x, y]) < limit)
+        if row:
+            m = row.most_common(1)[0][0]
+            for x in range(x0, x1):
+                if (x, y) in cover:
+                    px[x, y] = m
+
+
 def draw_runs(img, src, p):
     """lines made of differently coloured pieces and icons cut from the original:
     "runs": [[{"t": "text", "fill": "#rrggbb"}, {"icon": [x0, y0, x1, y1]}, ...], ...]"""
@@ -906,6 +940,12 @@ def build_panel(name, sp, src, img, out_dir):
     """plain text on a flat panel: rows refilled with the panel colour, game font in the old colours"""
     base = {k: v for k, v in sp.items() if k != 'parts'}
     parts = [dict(base, **p) for p in sp.get('parts', [{}])]
+    for p in parts:   # English lines known exactly: erased pixel for pixel
+        for k in p.get('orig_text', []):
+            at = k.get('at')
+            region = k.get('region') or [at[0] - 2, at[1] - 2, img.width, img.height]
+            erase_known(img, k['t'], k['font'], region, p.get('limit', 110), at)
+    clean = img.copy()   # icons inside text are cut from here: no English letters touch them
     for p in parts:   # erase everything first: parts may share rows
         for r in p.get('clear', [p['box']]):
             mode = r[4] if len(r) > 4 else p.get('erase')   # a rect may name its own erase mode
@@ -926,7 +966,7 @@ def build_panel(name, sp, src, img, out_dir):
                 flat_fill(img, r, p.get('limit', 110), p.get('lo', 12))
     for p in parts:
         if 'runs' in p:
-            draw_runs(img, src, p)
+            draw_runs(img, clean, p)
             continue
         x0, y0, x1, y1 = p['box']
         lines = p['text'].split('|')
@@ -991,6 +1031,8 @@ def build_panel(name, sp, src, img, out_dir):
                 for ux in range(max(0, x + bb[0]), x + bb[2]):
                     img.putpixel((ux, y + bb[3] + p['uline'] - 1), tuple(fills[0][:3]) + (255,))
             y += t.height + gap
+    for r in sp.get('restore', []):   # pieces of the original put back over the redraw (icons)
+        img.paste(src.crop(tuple(r)), tuple(r[:2]))
     if sp.get('keep_mod'):   # lettering of the Russian mod's own image that looks fine:
         mod = Image.open(os.path.join(ROOT, 'work', 'modsrc', name)).convert('RGBA').load()
         org, px = src.load(), img.load()   # only its pixels far from the original ground
