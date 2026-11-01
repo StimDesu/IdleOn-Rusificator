@@ -48,6 +48,12 @@ module.exports = [
       (plus ? '+(globalThis.__ruKW?__ruKW("' + k + ':").length-1:' + plus.slice(1) + ')' : ''),
   },
   {
+    // character cards add an English plural "s" to the monster a fighting character farms
+    name: 'no plural s on AFK monster name',
+    find: /("FIGHTING"==\w+\.h\[""\+\w+\.string\(\w+\.h\[\w+\]\.h\.AFKtarget\)\]\.h\.AFKtype)(&&\(this\._(?:dummytext|DummyText)\+="s"\))/g,
+    replace: (m, a, b) => a + '&&!globalThis.__ruL' + b,
+  },
+  {
     // sailing island board: the name is an adjective in Russian (runtime/translate.js)
     name: 'island names',
     find: /(this\._DT1=)(""\+\w+\.string\(this\._GenINFO\[8\]\[0\|this\._DRI\]\))/,

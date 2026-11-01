@@ -6,3 +6,5 @@ __pycache__/
 fonts/report.json
 patcher/last-run.log
 fishing_overlay/overlay_state.json
+minigames/minigames_state.json
+minigames/logs/

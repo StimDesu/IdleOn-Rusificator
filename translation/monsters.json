@@ -389,5 +389,12 @@
  "Justice": "Справедливость",
  "Wisdom": "Мудрость",
  "CHOPPIN": "РУБКА",
- "Paying_Respect": "Отдаёт_дань_уважения"
+ "Paying_Respect": "Отдаёт_дань_уважения",
+ "FIGHTING": "СРАЖЕНИЕ",
+ "FISHING": "РЫБАЛКА",
+ "CATCHING": "ЛОВЛЯ_ЖУКОВ",
+ "COOKING": "КУЛИНАРИЯ",
+ "DIVINITY": "БОЖЕСТВЕННОСТЬ",
+ "SPELUNKING": "СПЕЛЕОЛОГИЯ",
+ "Respecting": "Почитание"
 }
