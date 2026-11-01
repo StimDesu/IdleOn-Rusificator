@@ -806,17 +806,17 @@ def flat_fill(img, rect, limit=110, lo=12):
             px[x, y] = m
 
 
-def text_fill(img, rect, limit=110):
+def text_fill(img, rect, limit=110, anysat=False):
     """repaint only the lettering inside rect (light pixels and the dark outline touching
     them) with each row's panel colour; whatever else is there stays"""
     x0, y0, x1, y1 = rect
     px = img.load()
     light = {(x, y) for y in range(y0, y1) for x in range(x0, x1)
-             if px[x, y][3] > 100 and lum(px[x, y]) > 140 and max(px[x, y][:3]) - min(px[x, y][:3]) < 60}
+             if px[x, y][3] > 100 and lum(px[x, y]) > 140 and (anysat or max(px[x, y][:3]) - min(px[x, y][:3]) < 60)}
     dark = {(x + dx, y + dy) for x, y in light for dx in (-1, 0, 1) for dy in (-1, 0, 1)
             if x0 <= x + dx < x1 and y0 <= y + dy < y1 and lum(px[x + dx, y + dy]) < 60}
     for y in range(y0, y1):
-        row = Counter(px[x, y] for x in range(x0, x1) if 12 < lum(px[x, y]) < limit)
+        row = Counter(px[x, y] for x in range(x0, x1) if lum(px[x, y]) < limit and (x, y) not in dark)
         if not row:
             continue
         m = row.most_common(1)[0][0]
@@ -848,7 +848,7 @@ def build_panel(name, sp, src, img, out_dir):
             if p.get('erase') == 'clear':   # text on transparent ground
                 erase(img, r, 'clear')
             elif p.get('erase') == 'text':   # sprites over the text: only its own pixels go
-                text_fill(img, r, p.get('limit', 110))
+                text_fill(img, r, p.get('limit', 110), p.get('anysat', False))
             else:
                 flat_fill(img, r, p.get('limit', 110), p.get('lo', 12))
     for p in parts:
