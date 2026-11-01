@@ -16,7 +16,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
 import tempfile
 
-from retext import Font, ROOT, GAME, lum, build_panel   # noqa: E402
+from retext import Font, ROOT, GAME, lum, build_panel, hexcol   # noqa: E402
 from modredo import detect_font   # noqa: E402
 
 # (font id, glyph, text, text font, dash length each side or 0)
@@ -27,7 +27,7 @@ LABELS = [
 # (font id, glyph, canvas width or None, retext panel spec): the canvas grows to the right
 PANELS = [
     (726, chr(47691), None, {'parts': [   # Halloween: "Keep IdleOn open for another" [time] [109 below]
-        {'text': 'Держи IdleOn открытым ещё', 'box': [34, 4, 224, 21], 'clear': [[34, 6, 222, 22, 'flat']],
+        {'text': 'Держи IdleOn открытым ещё', 'box': [34, 4, 224, 21], 'clear': [[34, 6, 212, 22, 'flat'], [212, 9, 221, 12, 'flat'], [212, 12, 224, 20, 'flat'], [212, 6, 217, 9, 'flat']],
          'fonts': [475], 'align': 'left', 'flat': True, 'fill': '#ffda90', 'outline': 'auto', 'dy': 4}]}),
     (109, chr(50636), 132, {'erase': 'clear', 'parts': [   # ...[time] "for a FREE Play"
         {'runs': [[{'t': 'до ', 'fill': '#5fd8ff'}, {'t': 'БЕСПЛАТНОЙ игры', 'fill': '#c4f2ff'}]],
@@ -100,8 +100,17 @@ def simple(fid, ch, sp):
     h = sp.get('height', old.height)   # the glyph may grow downwards
     part = {'text': sp['text'], 'box': [x0, 0, x1 if 'x1' in sp else w, h], 'clear': [[x0, 0, x1, old.height]],
             'fonts': fonts, 'outline': 'auto', 'cbox': bx, 'align': sp.get('align', 'left' if x0 else 'center')}
-    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1', 'height', 'restore')})
-    return panel(fid, ch, w, {'erase': sp.get('erase', 'clear'), 'parts': [part], 'restore': sp.get('restore', [])}, h)
+    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1', 'height', 'restore', 'stripes')})
+    img, g = panel(fid, ch, w, {'erase': sp.get('erase', 'clear'), 'parts': [part], 'restore': sp.get('restore', [])}, h)
+    if sp.get('stripes'):   # diagonal bands "\" over the fill colour: [colour, period, width]
+        col, period, width = sp['stripes']
+        fill, col = hexcol(sp['fill'])[:3], hexcol(col)
+        ip = img.load()
+        for y in range(img.height):
+            for x in range(img.width):
+                if ip[x, y][:3] == fill and (x - y) % period < width:
+                    ip[x, y] = col
+    return img, g
 
 
 def main():

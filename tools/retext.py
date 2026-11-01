@@ -1015,6 +1015,8 @@ def build_panel(name, sp, src, img, out_dir):
                     t = add_ring(tint_all(t, fills[0]), [outl or (0, 0, 0, 255)])
                 else:
                     t = two_tone(t, fills[0], outl or (0, 0, 0, 255))
+                for c in p.get('rings', []):   # whole rings one after another (outline, then glow)
+                    t = add_ring(t, [hexcol(c)])
                 out.append(add_ring(t, [hexcol(c) for c in p['ring']]) if p.get('ring') else t)
                 continue
             t = recolor(t, (255, 255, 255, 255), outl or (0, 0, 0, 255))
