@@ -15,7 +15,7 @@ LABELS = {'D': 'Урон', 'H': 'Здоровье', 'S': 'Скорость', 'M'
 WORLD = {3: '#a4eff1', 5: None}   # None: sampled from the original
 # name: (title, labels, icon x (right edge of line 1), line 1, more lines, world n | None, sprites over text)
 CARDS = {
-    'Ccards1': ('НОВИЧОК', 'DHS', 192, '• Спец по добыче руды', ['• Дальнейшие классы воина', 'качают навыки слева от города'], None, False),
+    'Ccards1': ('НОВИЧОК', 'DHS', 192, '• Спец по добыче руды', ['• Высшие классы воина', 'качают навыки левее города'], None, False),
     'Ccards10': ('КРОВАВЫЙ БЕРСЕРК', 'DHM', 161, '• Спец по кулинарии', ['• Бьёт одну цель и копит', 'силу, пока стоит на месте'], None, True),
     'Ccards2': ('ПОДМАСТЕРЬЕ', 'DHS', 164, '• Спец по луту', [], None, False),
     'Ccards20': ('СТРЕЛОК', 'DSM', 167, '• Спец по ловле жуков', [], None, False),

@@ -919,6 +919,8 @@ def draw_runs(img, src, p):
         lines = build(fid, spacing)
         if max(w for _, w in lines) <= x1 - x0 + 2:
             break
+    if spacing < 0:
+        print(f'  runs squeezed to fit (font {fid}, spacing {spacing})')
     lh = [max(im.height for im, _ in pieces) for pieces, _ in lines]
     gap = p.get('gap', 2)
     y = int(round((y0 + y1) / 2 - (sum(lh) + gap * (len(lh) - 1)) / 2)) + p.get('dy', 0)
@@ -991,6 +993,8 @@ def build_panel(name, sp, src, img, out_dir):
                 rendered = [t.resize((t.width * k, t.height * k), Image.NEAREST) for t in rendered]
             if max(t.width for t in rendered) <= maxw + 2:
                 break
+        if spacing < p.get('spacing', 0) and not p.get('tight'):   # squeezed letters read badly
+            print(f'  {name}: "{lines[0]}..." squeezed to fit (font {fid}, spacing {spacing})')
         for t in rendered:
             if t.width > maxw + 2:
                 print(f'  {name}: "{lines}" is {t.width}px wide, box {maxw}px')
