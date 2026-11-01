@@ -979,6 +979,11 @@ def build_panel(name, sp, src, img, out_dir):
                         a_, b_ = row[lft if lft is not None else rgt], row[rgt if rgt is not None else lft]
                         k = 0.5 if lft is None or rgt is None else (i - lft) / (rgt - lft)
                         px[r[0] + i, yy] = tuple(round(a_[j] + (b_[j] - a_[j]) * k) for j in range(3)) + (255,)
+            elif mode == 'edge_r':   # the same from the right edge (an icon on the left)
+                px = img.load()
+                for yy in range(r[1], r[3]):
+                    for xx in range(r[0], r[2] - 1):
+                        px[xx, yy] = px[r[2] - 1, yy]
             elif mode == 'edge':   # gradient ground: each row takes the colour of its left edge
                 px = img.load()
                 for yy in range(r[1], r[3]):
@@ -997,6 +1002,8 @@ def build_panel(name, sp, src, img, out_dir):
         lines = p['text'].split('|')
         allf = row_fills(src, p.get('cbox', p['box'])) if not p.get('fill') else [hexcol(p['fill'])]
         allf = allf or [hexcol('#ffffff')]   # no lettering found to take colours from
+        if p.get('fills'):   # colours given top to bottom (two-tone captions)
+            allf = [hexcol(c) for c in p['fills']]
         if p.get('fill'):
             fills = allf
         else:

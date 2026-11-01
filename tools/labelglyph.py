@@ -102,8 +102,27 @@ def simple(fid, ch, sp):
             'fonts': fonts, 'outline': 'auto', 'cbox': bx, 'align': sp.get('align', 'left' if x0 else 'center')}
     part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1', 'height', 'restore', 'stripes', 'more')})
     more = [dict({'outline': 'auto', 'erase': sp.get('erase', 'clear')}, **m) for m in sp.get('more', [])]   # other captions
+    marks = []
+    for i, p in enumerate([part] + more):   # from_orig: [x0, y0, x1, y1] of the English lettering whose colours
+        if p.get('from_orig'):               # (rainbow letters, gradients) the Russian takes over point by point
+            key = (254, 1, 250 - i)
+            p.update(flat=True, fill='#%02x%02x%02x' % key)
+            marks.append((key, p['from_orig'], p.get('src_lum', 100)))
     img, g = panel(fid, ch, w, {'erase': sp.get('erase', 'clear'), 'parts': [part] + more,
                                 'restore': sp.get('restore', [])}, h)
+    ip = img.load()
+    for key, (ox0, oy0, ox1, oy1), src_lum in marks:
+        pts = [(x, y) for y in range(img.height) for x in range(img.width) if ip[x, y][:3] == key]
+        if not pts:
+            continue
+        nx0, ny0 = min(p[0] for p in pts), min(p[1] for p in pts)
+        nw, nh = max(p[0] for p in pts) - nx0 + 1, max(p[1] for p in pts) - ny0 + 1
+        src = [(x, y) for y in range(oy0, oy1) for x in range(ox0, ox1) if px[x, y][3] > 150 and lum(px[x, y]) > src_lum]
+        for x, y in pts:
+            tx = ox0 + (x - nx0) * (ox1 - ox0) / nw
+            ty = oy0 + (y - ny0) * (oy1 - oy0) / nh
+            best = min(src, key=lambda q: (q[0] - tx) ** 2 + 4 * (q[1] - ty) ** 2)   # rows matter more
+            ip[x, y] = px[best]
     if sp.get('stripes'):   # diagonal bands "\" over the fill colour: [colour, period, width]
         col, period, width = sp['stripes']
         fill, col = hexcol(sp['fill'])[:3], hexcol(col)
