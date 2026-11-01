@@ -904,7 +904,7 @@ def draw_runs(img, src, p):
                 if p.get('px', 1) > 1:
                     im = im.resize((im.width * p['px'], im.height * p['px']), Image.NEAREST)
                 im = two_tone(im, hexcol(r.get('fill', p.get('fill', '#ffffff'))), outl) if im.width else im
-                pieces.append((im, (lead, trail)))
+                pieces.append((im, (lead, trail, r.get('uline'), hexcol(r.get('fill', p.get('fill', '#ffffff'))))))
             boxes = [im.getbbox() for im, sp in pieces if sp != 'icon' and im.width and im.getbbox()]
             if boxes:   # one vertical crop for the whole line keeps the baseline
                 t0, t1 = min(b[1] for b in boxes), max(b[3] for b in boxes)
@@ -934,6 +934,10 @@ def draw_runs(img, src, p):
             x += space * sp[0]
             if im.width:
                 img.alpha_composite(im, (x, y + (h - im.height) // 2))
+                if sp[2]:   # an underlined piece ("all the time"), in its own colour
+                    bb = im.getbbox()
+                    for ux in range(x + bb[0], x + bb[2]):
+                        img.putpixel((ux, y + (h - im.height) // 2 + bb[3] + sp[2] - 1), tuple(sp[3][:3]) + (255,))
             x += im.width + space * sp[1]
         y += h + gap
 
@@ -961,6 +965,20 @@ def build_panel(name, sp, src, img, out_dir):
                 flat_fill(img, r, p.get('limit', 110), p.get('lo', 12))
             elif mode == 'clear':   # text on transparent ground
                 erase(img, r, 'clear')
+            elif mode == 'interp':   # ground shaded both ways: lettering (very light or very dark)
+                px = img.load()          # filled in from the ground on its left and right
+                for yy in range(r[1], r[3]):
+                    row = [px[xx, yy] for xx in range(r[0], r[2])]
+                    txt = [lum(c) > p.get('limit', 200) or lum(c) < p.get('lo', 30) for c in row]
+                    good = [i for i, t in enumerate(txt) if not t]
+                    for i, t in enumerate(txt):
+                        if not t or not good:
+                            continue
+                        lft = max((g for g in good if g < i), default=None)
+                        rgt = min((g for g in good if g > i), default=None)
+                        a_, b_ = row[lft if lft is not None else rgt], row[rgt if rgt is not None else lft]
+                        k = 0.5 if lft is None or rgt is None else (i - lft) / (rgt - lft)
+                        px[r[0] + i, yy] = tuple(round(a_[j] + (b_[j] - a_[j]) * k) for j in range(3)) + (255,)
             elif mode == 'edge':   # gradient ground: each row takes the colour of its left edge
                 px = img.load()
                 for yy in range(r[1], r[3]):
@@ -1013,6 +1031,9 @@ def build_panel(name, sp, src, img, out_dir):
                 continue
             if p.get('flat'):   # one fill colour, one outline colour, no shading
                 if p.get('solid'):   # outline-less font: the whole glyph is the fill, outline around
+                    t = add_ring(tint_all(t, fills[0]), [outl or (0, 0, 0, 255)])
+                elif p.get('bodies'):   # the font's own shadow goes, a thin even outline instead
+                    t = drop_outline(recolor(t, (255, 255, 255, 255), (0, 0, 0, 255)))
                     t = add_ring(tint_all(t, fills[0]), [outl or (0, 0, 0, 255)])
                 else:
                     t = two_tone(t, fills[0], outl or (0, 0, 0, 255))
