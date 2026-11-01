@@ -97,6 +97,9 @@ PIX = {
         'И': ['##..##', '##..##', '##.###', '######', '###.##', '##..##', '##..##'],
         'Н': ['##..##', '##..##', '##..##', '######', '##..##', '##..##', '##..##'],
         'Ф': ['...##...', '########', '##.##.##', '##.##.##', '##.##.##', '########', '...##...']},
+    8: {'Ж': ['##..#..##', '.##.#.##.', '.##.#.##.', '..#####..', '.##.#.##.', '.##.#.##.', '##..#..##', '##..#..##'],
+        'М': ['##....##', '###..###', '########', '##.##.##', '##....##', '##....##', '##....##', '##....##'],
+        'И': ['##...##', '##...##', '##..###', '##.####', '####.##', '###..##', '##...##', '##...##']},
     6: {'С': ['#####', '##...', '##...', '##...', '##...', '#####'],
         'Л': ['..####', '.##.##', '.##.##', '.##.##', '.##.##', '##..##'],
         'Е': ['#####', '##...', '####.', '##...', '##...', '#####'],
@@ -108,7 +111,7 @@ PIX = {
 }
 
 
-def text_mask(font, text, fit=False):
+def text_mask(font, text, fit=False, height=None, spacing=0):
     """rows of 0/1 of the letter bodies of one line: a PIX size ('pix7') or a game font"""
     if str(font).startswith('pix'):
         h = int(font[3:])
@@ -116,10 +119,10 @@ def text_mask(font, text, fit=False):
         for ch in text:
             g = PIX[h][ch] if ch != ' ' else ['...'] * h
             if cols:
-                cols.append([0] * h)
+                cols += [[0] * h] * (1 + spacing)
             cols += [[int(g[y][x] == '#') for y in range(h)] for x in range(len(g[0]))]
         return [[c[y] for c in cols] for y in range(h)]
-    t = Font(str(font)).render(text)
+    t = Font(str(font)).render(text, spacing)
     tp = t.load()
     ls = [lum(tp[x, y]) for y in range(t.height) for x in range(t.width) if tp[x, y][3] > 100]
     lo = min(ls) if max(ls) - min(ls) > 40 else -41
@@ -128,12 +131,21 @@ def text_mask(font, text, fit=False):
     m = m[rows[0]:rows[-1] + 1]
     xs = [x for x in range(t.width) if any(r[x] for r in m)]
     m = [r[xs[0]:xs[-1] + 1] for r in m]
+    if height:   # a smaller capital height than the font's
+        m = squeeze(m, 0, len(m), height)
+        return m
     if not fit:
         return m
     # capitals only: Д, Ц, Щ feet go back into the capital height (they read as a stripe under the line)
     cnt = [sum(r) for r in m]
     core = [y for y in range(len(m)) if cnt[y] * 3 >= max(cnt)]
     c0, c1 = core[0], core[-1] + 1
+    return squeeze(m, c0, c1, c1 - c0)
+
+
+def squeeze(m, c0, c1, h):
+    """every letter (columns between blank ones) reaching outside rows c0..c1 or taller than h
+    squeezed into h rows from c0"""
     w = len(m[0])
     x = 0
     while x < w:
@@ -144,12 +156,13 @@ def text_mask(font, text, fit=False):
         while e < w and any(r[e] for r in m):
             e += 1
         ys = [y for y in range(len(m)) if any(m[y][x:e])]
-        if ys[0] < c0 or ys[-1] >= c1:
-            g = shrink_rows([r[x:e] for r in m[ys[0]:ys[-1] + 1]], c1 - c0)
+        if ys[0] < c0 or ys[-1] >= c1 or ys[-1] - ys[0] + 1 > h:
+            g = shrink_rows([r[x:e] for r in m[ys[0]:ys[-1] + 1]], h)
+            g = [[0] * (e - x)] * (h - len(g)) + g   # short letters sit on the base line
             for y in range(len(m)):
-                m[y][x:e] = g[y - c0] if c0 <= y < c1 else [0] * (e - x)
+                m[y][x:e] = g[y - c0] if c0 <= y < c0 + h else [0] * (e - x)
         x = e
-    return m[c0:c1]
+    return m[c0:c0 + h]
 
 
 def shrink_rows(rows, h):
@@ -173,7 +186,7 @@ def draw_text(img, sp):
     body = {}   # (x, y) -> row index within its line, line height
     y = sp['y']
     for line in sp['text'].split('|'):
-        m = text_mask(sp['font'], line, sp.get('fit', False))
+        m = text_mask(sp['font'], line, sp.get('fit', False), sp.get('rows'), sp.get('spacing', 0))
         h, w = len(m), len(m[0])
         x = sp['x'] if 'x' in sp else round(sp['cx'] - w / 2)
         for r in range(h):
@@ -184,15 +197,19 @@ def draw_text(img, sp):
     split = sp.get('split', 10 ** 6)
     rings = sorted(sp.get('rings', []))
     paint = {}
+    # extrude: the letters stand n rows deep, the sides in the inner ring colour
+    ext = {(x, y + k) for x, y in body for k in range(1, sp.get('extrude', 0) + 1)} - set(body)
+    for p in ext:
+        paint[p] = 0
     if rings:
         rmax = rings[-1][0]
         k = int(rmax ** 0.5) + 1
-        for (bx, by) in body:
+        for (bx, by) in list(body) + list(ext):
             for dy in range(-k, k + 1):
                 for dx in range(-k, k + 1):
                     d = dx * dx + dy * dy
                     p = (bx + dx, by + dy)
-                    if d <= rmax and p not in body and d < paint.get(p, 10 ** 6):
+                    if d <= rmax and p not in body and p not in ext and d < paint.get(p, 10 ** 6):
                         paint[p] = d
     shape = set(body) | set(paint)
     if sp.get('shadow'):
@@ -217,6 +234,8 @@ def custom(fid, ch, sp):
       fills   body colours top to bottom, stretched over the letter height
       rings   [[r², colour above split, colour from split]] outlines by squared distance, inner first
       shadow  [dx, dy, colour, [[from y, colour], ...]] behind everything, darker on lower bands
+      extrude n rows of depth under the letters in the inner ring colour
+      fit     capitals: feet of Д, Ц, Щ inside the capital height; rows: letters squeezed to n rows
       clip    [x0, y0, x1, y1] nothing drawn outside
       parts   several such texts (text .. clip) on one glyph
     (a simple() entry takes such a spec as "then", drawn over its result)"""
