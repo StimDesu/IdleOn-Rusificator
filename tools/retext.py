@@ -778,19 +778,19 @@ def build_button(name, sp, src, img, out_dir, save=True):
         img.save(os.path.join(out_dir, name))
 
 
-def flat_fill(img, rect, limit=110):
+def flat_fill(img, rect, limit=110, lo=12):
     """paint a rectangle of a flat panel with each row's own panel colour; rows the lettering
     covers more than half of take the colour of the nearest clean row"""
     x0, y0, x1, y1 = rect
     px = img.load()
     # the panel's own colour: rows are clean only when their colour is near it (not an outline)
     allc = Counter(px[x, y] for y in range(y0, y1) for x in range(x0, x1)
-                   if px[x, y][3] > 100 and 12 < lum(px[x, y]) < limit)
+                   if px[x, y][3] > 100 and lo < lum(px[x, y]) < limit)
     panel = allc.most_common(1)[0][0] if allc else None
     modes = {}
     for y in range(y0, y1):
         # the panel is dark (often semi-transparent), the lettering light with a dark outline
-        body = Counter(px[x, y] for x in range(x0, x1) if px[x, y][3] > 100 and 12 < lum(px[x, y]) < limit)
+        body = Counter(px[x, y] for x in range(x0, x1) if px[x, y][3] > 100 and lo < lum(px[x, y]) < limit)
         if body:
             m = body.most_common(1)[0][0]
             n = sum(k for c, k in body.items() if near(c, m, 24))   # noisy panels
@@ -850,7 +850,7 @@ def build_panel(name, sp, src, img, out_dir):
             elif p.get('erase') == 'text':   # sprites over the text: only its own pixels go
                 text_fill(img, r, p.get('limit', 110))
             else:
-                flat_fill(img, r, p.get('limit', 110))
+                flat_fill(img, r, p.get('limit', 110), p.get('lo', 12))
     for p in parts:
         x0, y0, x1, y1 = p['box']
         lines = p['text'].split('|')
