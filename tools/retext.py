@@ -915,6 +915,14 @@ def build_panel(name, sp, src, img, out_dir):
                 for ux in range(max(0, x + bb[0]), x + bb[2]):
                     img.putpixel((ux, y + bb[3] + p['uline'] - 1), tuple(fills[0][:3]) + (255,))
             y += t.height + gap
+    if sp.get('keep_mod'):   # lettering of the Russian mod's own image that looks fine:
+        mod = Image.open(os.path.join(ROOT, 'work', 'modsrc', name)).convert('RGBA').load()
+        org, px = src.load(), img.load()   # only its pixels far from the original ground
+        for x0, y0, x1, y1 in sp['keep_mod']:
+            for y in range(y0, y1):
+                for x in range(x0, x1):
+                    if sum(abs(a - b) for a, b in zip(mod[x, y], org[x, y])) > 90:
+                        px[x, y] = mod[x, y]
     img.save(os.path.join(out_dir, name))
 
 
