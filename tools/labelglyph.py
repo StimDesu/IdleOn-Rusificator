@@ -21,14 +21,14 @@ from modredo import detect_font   # noqa: E402
 
 # (font id, glyph, text, text font, dash length each side or 0)
 LABELS = [
-    (259, '蒂', 'Множитель бонусов вешалки', 223, 12),
+    (259, '蒂', 'Множитель вешалки', 75, 12),
 ]
 
 # (font id, glyph, canvas width or None, retext panel spec): the canvas grows to the right
 PANELS = [
     (726, chr(47691), None, {'parts': [   # Halloween: "Keep IdleOn open for another" [time] [109 below]
-        {'text': 'Держи IdleOn открытым ещё', 'box': [34, 4, 224, 21], 'clear': [[34, 4, 224, 22, 'flat']],
-         'fonts': [475], 'align': 'left', 'outline': 'auto', 'cbox': [36, 6, 222, 18]}]}),
+        {'text': 'Держи IdleOn открытым ещё', 'box': [34, 4, 224, 21], 'clear': [[34, 6, 222, 22, 'flat']],
+         'fonts': [475], 'align': 'left', 'flat': True, 'fill': '#ffda90', 'outline': 'auto', 'dy': 4}]}),
     (109, chr(50636), 132, {'erase': 'clear', 'parts': [   # ...[time] "for a FREE Play"
         {'runs': [[{'t': 'до ', 'fill': '#5fd8ff'}, {'t': 'БЕСПЛАТНОЙ игры', 'fill': '#c4f2ff'}]],
          'box': [0, 0, 132, 13], 'clear': [[0, 0, 132, 13]], 'fonts': [109], 'align': 'left'}]}),
@@ -56,8 +56,9 @@ def label(fid, ch, text, tfont, dash):
               key=lambda c: (lum(c), c))
     t = Font(str(tfont)).render(text)
     tp = t.load()
-    lo = min(lum(tp[x, y]) for y in range(t.height) for x in range(t.width) if tp[x, y][3] > 100)
+    ls = [lum(tp[x, y]) for y in range(t.height) for x in range(t.width) if tp[x, y][3] > 100]
     # the letter bodies only (the outline goes): the label is one flat colour like the original
+    lo = min(ls) if max(ls) - min(ls) > 40 else -41   # a one-colour font is all body
     rows = [y for y in range(t.height) if any(tp[x, y][3] > 100 and lum(tp[x, y]) > lo + 40 for x in range(t.width))]
     y0, y1 = rows[0], rows[-1] + 1
     w = t.width + 2 * (dash + 3) if dash else t.width
@@ -75,9 +76,9 @@ def label(fid, ch, text, tfont, dash):
     return out, g
 
 
-def panel(fid, ch, width, sp):
+def panel(fid, ch, width, sp, height=None):
     old, g = orig_glyph(fid, ch)
-    src = Image.new('RGBA', (width or old.width, old.height), (0, 0, 0, 0))
+    src = Image.new('RGBA', (width or old.width, height or old.height), (0, 0, 0, 0))
     src.paste(old, (0, 0))
     with tempfile.TemporaryDirectory() as tmp:
         build_panel('glyph.png', sp, src, src.copy(), tmp)
@@ -95,11 +96,12 @@ def simple(fid, ch, sp):
     pts = [(x, y) for y in range(old.height) for x in range(x0, x1) if px[x, y][3] > 100]
     bx = [min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts) + 1, max(p[1] for p in pts) + 1]
     fonts = sp.get('fonts') or [int(f) for f in detect_font(old, bx)[:1]] or [475]
-    w = max(old.width, x0 + Font(str(fonts[0])).render(sp['text'].split('|')[0]).width + 2)
-    part = {'text': sp['text'], 'box': [x0, 0, x1 if 'x1' in sp else w, old.height], 'clear': [[x0, 0, x1, old.height]],
+    w = max([old.width] + [x0 + Font(str(fonts[0])).render(t).width * sp.get('px', 1) + 2 for t in sp['text'].split('|')])
+    h = sp.get('height', old.height)   # the glyph may grow downwards
+    part = {'text': sp['text'], 'box': [x0, 0, x1 if 'x1' in sp else w, h], 'clear': [[x0, 0, x1, old.height]],
             'fonts': fonts, 'outline': 'auto', 'cbox': bx, 'align': sp.get('align', 'left' if x0 else 'center')}
-    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1')})
-    return panel(fid, ch, w, {'erase': sp.get('erase', 'clear'), 'parts': [part]})
+    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1', 'height', 'restore')})
+    return panel(fid, ch, w, {'erase': sp.get('erase', 'clear'), 'parts': [part], 'restore': sp.get('restore', [])}, h)
 
 
 def main():

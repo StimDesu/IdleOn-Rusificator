@@ -6323,7 +6323,8 @@
      46
     ],
     "uline": 2,
-    "fill": null
+    "fill": null,
+    "clear": []
    },
    {
     "text": "У ТЕБЯ",
@@ -6344,7 +6345,8 @@
      360,
      46
     ],
-    "fill": null
+    "fill": null,
+    "clear": []
    },
    {
     "text": "(НО ЕГО НЕЛЬЗЯ ОБМЕНЯТЬ)",
@@ -6474,13 +6476,9 @@
      223
     ],
     "gap": 2,
-    "outline": "auto",
-    "cbox": [
-     818,
-     449,
-     1053,
-     462
-    ]
+    "outline": "#1f2a55",
+    "flat": true,
+    "fill": "#a0d6f3"
    }
   ]
  }

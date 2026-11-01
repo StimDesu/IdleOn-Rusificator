@@ -666,11 +666,11 @@
 "id": 33922,
 "x": 0,
 "y": 81,
-"width": 204,
-"height": 12,
+"width": 150,
+"height": 9,
 "xoffset": 0,
 "yoffset": 0,
-"xadvance": 204,
+"xadvance": 150,
 "replace": true
 }
 ]
