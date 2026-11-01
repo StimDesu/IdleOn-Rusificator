@@ -691,6 +691,17 @@
 "xoffset": 1,
 "yoffset": 3,
 "xadvance": 7
+},
+{
+"id": 50636,
+"x": 0,
+"y": 37,
+"width": 132,
+"height": 13,
+"xoffset": 0,
+"yoffset": 0,
+"xadvance": 132,
+"replace": true
 }
 ]
 }

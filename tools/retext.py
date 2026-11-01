@@ -961,6 +961,11 @@ def build_panel(name, sp, src, img, out_dir):
                 flat_fill(img, r, p.get('limit', 110), p.get('lo', 12))
             elif mode == 'clear':   # text on transparent ground
                 erase(img, r, 'clear')
+            elif mode == 'edge':   # gradient ground: each row takes the colour of its left edge
+                px = img.load()
+                for yy in range(r[1], r[3]):
+                    for xx in range(r[0] + 1, r[2]):
+                        px[xx, yy] = px[r[0], yy]
             elif mode == 'text':   # sprites over the text: only its own pixels go
                 text_fill(img, r, p.get('limit', 110), p.get('anysat', False), p.get('dark_lum', 60),
                           r5[5] if len(r5) > 5 else None, p.get('dark_r', 1))
