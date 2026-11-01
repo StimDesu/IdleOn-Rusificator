@@ -87,6 +87,163 @@ def panel(fid, ch, width, sp, height=None):
     return out, g
 
 
+# small capitals of the game's caption fonts (2 px stems, 1 px bars) that no Cyrillic font has
+PIX = {
+    7: {'О': ['######', '##..##', '##..##', '##..##', '##..##', '##..##', '######'],
+        'Т': ['######', '..##..', '..##..', '..##..', '..##..', '..##..', '..##..'],
+        'К': ['##.##', '####.', '###..', '###..', '###..', '####.', '##.##'],
+        'Р': ['#####.', '##..##', '##..##', '#####.', '##....', '##....', '##....'],
+        'Ы': ['##.....##', '##.....##', '##.....##', '#####..##', '##..##.##', '##..##.##', '#####..##'],
+        'И': ['##..##', '##..##', '##.###', '######', '###.##', '##..##', '##..##'],
+        'Н': ['##..##', '##..##', '##..##', '######', '##..##', '##..##', '##..##'],
+        'Ф': ['...##...', '########', '##.##.##', '##.##.##', '##.##.##', '########', '...##...']},
+    6: {'С': ['#####', '##...', '##...', '##...', '##...', '#####'],
+        'Л': ['..####', '.##.##', '.##.##', '.##.##', '.##.##', '##..##'],
+        'Е': ['#####', '##...', '####.', '##...', '##...', '#####'],
+        'Д': ['..####.', '.##.##.', '.##.##.', '.##.##.', '#######', '##...##'],
+        '.': ['..', '..', '..', '..', '..', '##'],
+        'Б': ['#####', '##...', '#####', '##.##', '##.##', '#####'],
+        'Р': ['#####', '##.##', '##.##', '#####', '##...', '##...'],
+        'О': ['######', '##..##', '##..##', '##..##', '##..##', '######']},
+}
+
+
+def text_mask(font, text, fit=False):
+    """rows of 0/1 of the letter bodies of one line: a PIX size ('pix7') or a game font"""
+    if str(font).startswith('pix'):
+        h = int(font[3:])
+        cols = []
+        for ch in text:
+            g = PIX[h][ch] if ch != ' ' else ['...'] * h
+            if cols:
+                cols.append([0] * h)
+            cols += [[int(g[y][x] == '#') for y in range(h)] for x in range(len(g[0]))]
+        return [[c[y] for c in cols] for y in range(h)]
+    t = Font(str(font)).render(text)
+    tp = t.load()
+    ls = [lum(tp[x, y]) for y in range(t.height) for x in range(t.width) if tp[x, y][3] > 100]
+    lo = min(ls) if max(ls) - min(ls) > 40 else -41
+    m = [[int(tp[x, y][3] > 100 and lum(tp[x, y]) > lo + 40) for x in range(t.width)] for y in range(t.height)]
+    rows = [y for y in range(t.height) if any(m[y])]
+    m = m[rows[0]:rows[-1] + 1]
+    xs = [x for x in range(t.width) if any(r[x] for r in m)]
+    m = [r[xs[0]:xs[-1] + 1] for r in m]
+    if not fit:
+        return m
+    # capitals only: Д, Ц, Щ feet go back into the capital height (they read as a stripe under the line)
+    cnt = [sum(r) for r in m]
+    core = [y for y in range(len(m)) if cnt[y] * 3 >= max(cnt)]
+    c0, c1 = core[0], core[-1] + 1
+    w = len(m[0])
+    x = 0
+    while x < w:
+        if not any(r[x] for r in m):
+            x += 1
+            continue
+        e = x
+        while e < w and any(r[e] for r in m):
+            e += 1
+        ys = [y for y in range(len(m)) if any(m[y][x:e])]
+        if ys[0] < c0 or ys[-1] >= c1:
+            g = shrink_rows([r[x:e] for r in m[ys[0]:ys[-1] + 1]], c1 - c0)
+            for y in range(len(m)):
+                m[y][x:e] = g[y - c0] if c0 <= y < c1 else [0] * (e - x)
+        x = e
+    return m[c0:c1]
+
+
+def shrink_rows(rows, h):
+    """a letter squeezed to h rows by dropping the rows most like the one above, lowest first
+    (Д keeps its long walls, a one-row base and one-row feet)"""
+    rows = [r[:] for r in rows]
+    while len(rows) > h:
+        n = len(rows)
+        i = min(range(1, n), key=lambda i: (sum(a != b for a, b in zip(rows[i], rows[i - 1])), -i))
+        del rows[i]
+    return rows
+
+
+def draw_text(img, sp):
+    ip = img.load()
+    cx0, cy0, cx1, cy1 = sp.get('clip', [0, 0, img.width, img.height])
+
+    def put(p, col):
+        if cx0 <= p[0] < cx1 and cy0 <= p[1] < cy1:
+            ip[p] = hexcol(col)
+    body = {}   # (x, y) -> row index within its line, line height
+    y = sp['y']
+    for line in sp['text'].split('|'):
+        m = text_mask(sp['font'], line, sp.get('fit', False))
+        h, w = len(m), len(m[0])
+        x = sp['x'] if 'x' in sp else round(sp['cx'] - w / 2)
+        for r in range(h):
+            for c in range(w):
+                if m[r][c]:
+                    body[(x + c, y + r)] = (r, h)
+        y += h + sp.get('gap', 1)
+    split = sp.get('split', 10 ** 6)
+    rings = sorted(sp.get('rings', []))
+    paint = {}
+    if rings:
+        rmax = rings[-1][0]
+        k = int(rmax ** 0.5) + 1
+        for (bx, by) in body:
+            for dy in range(-k, k + 1):
+                for dx in range(-k, k + 1):
+                    d = dx * dx + dy * dy
+                    p = (bx + dx, by + dy)
+                    if d <= rmax and p not in body and d < paint.get(p, 10 ** 6):
+                        paint[p] = d
+    shape = set(body) | set(paint)
+    if sp.get('shadow'):
+        dx, dy, col, *bands = sp['shadow']
+        for (x, y) in shape:
+            p = (x + dx, y + dy)
+            if p not in shape:
+                put(p, ([c for y0, c in (bands[0] if bands else []) if p[1] >= y0] or [col])[-1])
+    for p, d in paint.items():
+        r = next(r for r in rings if d <= r[0])
+        put(p, r[2] if len(r) > 2 and p[1] >= split else r[1])
+    fills = sp.get('fills', ['#ffffff'])
+    for p, (r, h) in body.items():
+        put(p, fills[min(len(fills) - 1, r * len(fills) // h)])
+
+
+def custom(fid, ch, sp):
+    """retext/glyphs.json entry with "draw": "custom": the lettering is drawn here pixel by pixel.
+      clear   [[x0, y0, x1, y1, mode]]: 'none' transparent, '#rrggbb', 'colN' each row from column N,
+              'near:#c1,#c2' the nearest pixel of the row in one of these ground colours
+      text, font ('pixN' or a font id), x (left) or cx (centre of each line), y (top of the bodies), gap
+      fills   body colours top to bottom, stretched over the letter height
+      rings   [[r², colour above split, colour from split]] outlines by squared distance, inner first
+      shadow  [dx, dy, colour, [[from y, colour], ...]] behind everything, darker on lower bands
+      clip    [x0, y0, x1, y1] nothing drawn outside
+      parts   several such texts (text .. clip) on one glyph
+    (a simple() entry takes such a spec as "then", drawn over its result)"""
+    old, g = orig_glyph(fid, ch)
+    img = Image.new('RGBA', (sp.get('width', old.width), sp.get('height', old.height)), (0, 0, 0, 0))
+    img.paste(old, (0, 0))
+    paint(img, old, sp)
+    return img, g
+
+
+def paint(img, old, sp):
+    op, ip = old.load(), img.load()
+    for x0, y0, x1, y1, mode in sp.get('clear', []):
+        ground = {hexcol(c) for c in mode[5:].split(',')} if mode.startswith('near:') else None
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                if ground:   # the nearest pixel of the row in one of the ground colours
+                    near = [op[q, y] for d in range(1, old.width) for q in (x - d, x + d)
+                            if 0 <= q < old.width and op[q, y] in ground]
+                    ip[x, y] = near[0] if near else ip[x, y]
+                else:
+                    ip[x, y] = ((0, 0, 0, 0) if mode == 'none' else hexcol(mode) if mode.startswith('#')
+                                else op[int(mode[3:]), y])
+    for part in sp.get('parts', [sp]):
+        draw_text(img, part)
+
+
 def simple(fid, ch, sp):
     """retext/glyphs.json entry: the English lettering right of x0 (an icon left of it stays)
     is erased and the Russian text drawn in the font that drew it, in its colours"""
@@ -100,7 +257,7 @@ def simple(fid, ch, sp):
     h = sp.get('height', old.height)   # the glyph may grow downwards
     part = {'text': sp['text'], 'box': [x0, 0, x1 if 'x1' in sp else w, h], 'clear': [[x0, 0, x1, old.height]],
             'fonts': fonts, 'outline': 'auto', 'cbox': bx, 'align': sp.get('align', 'left' if x0 else 'center')}
-    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1', 'height', 'restore', 'stripes', 'more')})
+    part.update({k: v for k, v in sp.items() if k not in ('x0', 'x1', 'height', 'restore', 'stripes', 'more', 'then')})
     more = [dict({'outline': 'auto', 'erase': sp.get('erase', 'clear')}, **m) for m in sp.get('more', [])]   # other captions
     marks = []
     for i, p in enumerate([part] + more):   # from_orig: [x0, y0, x1, y1] of the English lettering whose colours
@@ -131,6 +288,8 @@ def simple(fid, ch, sp):
             for x in range(img.width):
                 if ip[x, y][:3] == fill and (x - y) % period < width:
                     ip[x, y] = col
+    if sp.get('then'):
+        paint(img, old, sp['then'])
     return img, g
 
 
@@ -140,7 +299,8 @@ def main():
     for key, sp in json.load(open(os.path.join(ROOT, 'retext', 'glyphs.json'), encoding='utf-8')).items():
         if not key.startswith('_'):
             fid, cid = map(int, key.split(':'))
-            jobs.append((fid, chr(cid), lambda f=fid, c=chr(cid), s=sp: simple(f, c, s)))
+            draw = custom if sp.get('draw') == 'custom' else simple
+            jobs.append((fid, chr(cid), lambda f=fid, c=chr(cid), s=sp, d=draw: d(f, c, s)))
     byfont = {}
     for fid, ch, make in jobs:
         byfont.setdefault(fid, []).append((ch, make))
